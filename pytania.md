@@ -1,0 +1,1 @@
+# Czy podczas related work pisać tylko 1-2 zdania o podejściu, czy też jakie miało wyniki lub jak działało
