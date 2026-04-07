@@ -1,0 +1,13 @@
+[project]
+name = "dti"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "ipykernel>=7.2.0",
+    "matplotlib>=3.10.8",
+    "numpy<2",
+    "polars>=1.39.3",
+    "pytdc>=1.1.15",
+]
