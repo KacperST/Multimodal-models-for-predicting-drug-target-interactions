@@ -17,7 +17,6 @@ from data.transform import (
 )
 from models.gcn import SimpleGCN
 
-
 ROOT_DIR = Path(__file__).resolve().parent
 DATA_PATH = ROOT_DIR / "datasets" / "BindingDB_All.tsv"
 NUM_EPOCHS = 100
@@ -52,10 +51,7 @@ def analyze_weird_smiles(df: pl.DataFrame, col_name: str = "Ligand SMILES") -> p
 
 def describe_protein_sequence_lengths(df: pl.DataFrame) -> pl.DataFrame:
     df_with_lengths = df.with_columns(
-        pl.col("Full_Protein_Sequence")
-        .str.strip_chars()
-        .str.len_chars()
-        .alias("sequence_length")
+        pl.col("Full_Protein_Sequence").str.strip_chars().str.len_chars().alias("sequence_length")
     )
 
     print(df_with_lengths["sequence_length"].describe())
@@ -67,12 +63,7 @@ def describe_protein_sequence_lengths(df: pl.DataFrame) -> pl.DataFrame:
 
 def plot_smiles_frequency_distribution(df: pl.DataFrame) -> None:
     smiles_hist = df["Ligand SMILES"].value_counts(sort=True)
-    count_distribution = (
-        smiles_hist["count"]
-        .alias("c")
-        .value_counts()
-        .sort("count")
-    )
+    count_distribution = smiles_hist["count"].alias("c").value_counts().sort("count")
 
     plt.figure(figsize=(10, 6))
     plt.scatter(
@@ -94,12 +85,9 @@ def plot_smiles_frequency_distribution(df: pl.DataFrame) -> None:
 
 
 def plot_protein_length_distribution(df: pl.DataFrame) -> None:
-    lengths = (
-        df.with_columns(
-            pl.col("Full_Protein_Sequence").str.strip_chars().str.len_chars().alias("sequence_length")
-        )["sequence_length"]
-        .to_list()
-    )
+    lengths = df.with_columns(
+        pl.col("Full_Protein_Sequence").str.strip_chars().str.len_chars().alias("sequence_length")
+    )["sequence_length"].to_list()
 
     plt.figure(figsize=(10, 5))
     plt.hist(lengths, bins=60, color="steelblue", edgecolor="white")
