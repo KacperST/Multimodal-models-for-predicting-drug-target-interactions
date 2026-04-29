@@ -1,0 +1,56 @@
+# ─────────────────────────────────────────────────────────
+# Multi-encoder experiment: GCN + ChemBERT  ×  CNN + ESM-2
+# ─────────────────────────────────────────────────────────
+# Usage:  python main.py --config configs/multi_encoder.yaml
+
+data:
+  path: "datasets/BindingDB_All.tsv"
+  pki_threshold: 7.0
+  split_ratios: [0.7, 0.1, 0.2]
+
+# ── SMILES branch (two encoders) ─────────────────────────
+smiles_encoders:
+  - type: "gcn"
+    params:
+      hidden_dim: 256
+      num_layers: 3
+
+  - type: "chembert"
+    params:
+      out_dim: 256
+      freeze: true
+
+# ── Protein branch (two encoders) ────────────────────────
+protein_encoders:
+  - type: "cnn"
+    params:
+      embed_dim: 256
+      num_filters: 128
+      kernel_sizes: [3, 7, 15]
+      max_seq_len: 1000
+
+  - type: "esm2"
+    params:
+      out_dim: 256
+      freeze: true
+
+# ── Fusion ───────────────────────────────────────────────
+# smiles_dim = 256 (GCN) + 256 (ChemBERT) = 512
+# protein_dim = 384 (CNN: 128×3) + 256 (ESM-2) = 640
+fusion:
+  type: "cross_attention"
+  params:
+    proj_dim: 256
+    num_heads: 4
+    hidden_dim: 128
+    dropout: 0.3
+
+# ── Training ─────────────────────────────────────────────
+training:
+  batch_size: 128
+  learning_rate: 0.0001
+  weight_decay: 0.00001
+  epochs: 50
+  patience: 10
+  num_workers: 4
+  device: "auto"
