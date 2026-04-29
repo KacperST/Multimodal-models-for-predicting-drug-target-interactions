@@ -32,6 +32,26 @@ from data.transform import (
     train_test_val_split,
     tranform_ki_to_log_ki,
 )
+
+
+def load_data(data_cfg: dict) -> pl.DataFrame:
+    """Load dataset — clean Parquet if available, otherwise raw TSV + cleaning."""
+    clean_path = data_cfg.get("clean_path")
+    if clean_path:
+        path = str(ROOT_DIR / clean_path)
+        print(f"Loading clean data from: {path}")
+        return pl.read_parquet(path)
+
+    # Fallback: raw TSV + full cleaning pipeline
+    raw_path = str(ROOT_DIR / data_cfg["path"])
+    print(f"Loading raw data from: {raw_path}  (consider running prepare_data.py first)")
+    df = load_bindingdb_data(raw_path)
+    df = remove_cx_notation(df)
+    df = remove_nulls(df)
+    df = remove_duplicates(df)
+    df = tranform_ki_to_log_ki(df)
+    df = add_activity_label(df, pki_threshold=data_cfg.get("pki_threshold", 7.0))
+    return df
 from datasets.dti_dataset import DTIDataset, build_collate_fn
 from encoders.protein.cnn_encoder import ProteinCNNEncoder
 from encoders.smiles.fingerprint_mlp_encoder import FingerprintMLPEncoder
@@ -201,15 +221,9 @@ def main() -> None:
         device = torch.device(dev_str)
     print(f"Using device: {device}")
 
-    # ── 1. Load and clean data ───────────────────────────────────
-    data_path = str(ROOT_DIR / data_cfg["path"])
-    df = load_bindingdb_data(data_path)
-    df = remove_cx_notation(df)
-    df = remove_nulls(df)
-    df = remove_duplicates(df)
-    df = tranform_ki_to_log_ki(df)
-    df = add_activity_label(df, pki_threshold=data_cfg.get("pki_threshold", 7.0))
-    print(f"Dataset size after cleaning: {df.height}")
+    # ── 1. Load data ─────────────────────────────────────────────
+    df = load_data(data_cfg)
+    print(f"Dataset size: {df.height}")
 
     # ── 2. Train / val / test split ──────────────────────────────
     ratios = data_cfg.get("split_ratios", [0.7, 0.1, 0.2])
