@@ -58,7 +58,7 @@ def create_pyg_dataset(smiles_list, y_values=None, with_features=False):
 
     print(f"Konwersja {len(smiles_list)} SMILES na grafy (with_features={with_features})...")
 
-    for i, smiles in enumerate(smiles_list):
+    for i, smiles in tqdm(enumerate(smiles_list)):
         try:
             if with_features:
                 # 1. Features from OGB
@@ -111,3 +111,13 @@ def tokenize_sequences(df: pl.DataFrame, char_to_idx: dict, max_len: int = 1000)
         .list.eval(pl.element().replace(char_to_idx, default=unk_idx).cast(pl.Int64))
         .alias("Tokenized_Sequence")
     )
+
+def remove_duplicates(df: pl.DataFrame) -> pl.DataFrame:
+    return df.group_by(
+                ["Ligand SMILES", "Full_Protein_Sequence"]
+            ).agg(
+                [
+                    pl.col("Ki (nM)").mean().alias("Ki (nM)"),
+                ]
+            ).select(["Ligand SMILES", "Full_Protein_Sequence", "Ki (nM)"])
+        
