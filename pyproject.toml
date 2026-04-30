@@ -18,6 +18,7 @@ dependencies = [
     "pyyaml>=6.0",
     "scikit-learn>=1.5.0",
     "transformers>=5.7.0",
+    "scikit-fingerprints>=1.0.0",
 ]
 
 [build-system]
