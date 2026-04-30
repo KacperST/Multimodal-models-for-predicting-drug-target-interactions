@@ -85,12 +85,12 @@ def _build_one_smiles(enc_cfg: dict) -> tuple[InputProcessor, nn.Module]:
             num_layers=params.get("num_layers", 3),
         )
     elif enc_type == "fingerprint_mlp":
-        n_bits = params.get("n_bits", 2048)
-        processor = FingerprintProcessor(
-            radius=params.get("radius", 2), n_bits=n_bits,
-        )
+        fp_type = params.get("fp_type", "ecfp")
+        fp_params = params.get("fp_params", {})
+        processor = FingerprintProcessor(fp_type=fp_type, fp_params=fp_params)
+        input_dim = processor.fingerprint_dim
         encoder = FingerprintMLPEncoder(
-            input_dim=n_bits,
+            input_dim=input_dim,
             hidden_dim=params.get("hidden_dim", 512),
             out_dim=params.get("out_dim", 256),
             dropout=params.get("dropout", 0.2),
