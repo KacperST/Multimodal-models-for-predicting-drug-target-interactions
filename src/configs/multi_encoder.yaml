@@ -31,8 +31,10 @@ protein_encoders:
 
   - type: "esm2"
     params:
+      model_name: "facebook/esm2_t33_650M_UR50D"
       out_dim: 256
       freeze: true
+      max_seq_len: 1000
 
 # ── Fusion ───────────────────────────────────────────────
 # smiles_dim = 256 (GCN) + 256 (ChemBERT) = 512

@@ -25,6 +25,7 @@ class Trainer:
         criterion: nn.Module,
         device: torch.device,
         checkpoint_dir: str | Path = "checkpoints",
+        checkpoint_filename: str = "best_model.pt",
         patience: int = 8,
         scheduler_patience: int = 5,
         scheduler_factor: float = 0.5,
@@ -35,6 +36,7 @@ class Trainer:
         self.device = device
         self.checkpoint_dir = Path(checkpoint_dir)
         self.checkpoint_dir.mkdir(parents=True, exist_ok=True)
+        self.checkpoint_filename = checkpoint_filename
         self.patience = patience
 
         self.scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
@@ -127,7 +129,7 @@ class Trainer:
             if val_auc > best_val_auc:
                 best_val_auc = val_auc
                 best_epoch = epoch
-                ckpt_path = self.checkpoint_dir / "best_model.pt"
+                ckpt_path = self.checkpoint_dir / self.checkpoint_filename
                 torch.save(self.model.state_dict(), ckpt_path)
                 print(
                     f"  ✓ New best model (epoch {epoch}, val_auc={val_auc:.4f})"
@@ -142,7 +144,7 @@ class Trainer:
         print(f"\nBest model: epoch {best_epoch}, val_auc={best_val_auc:.4f}")
 
         # Load best checkpoint
-        best_ckpt = self.checkpoint_dir / "best_model.pt"
+        best_ckpt = self.checkpoint_dir / self.checkpoint_filename
         self.model.load_state_dict(torch.load(best_ckpt, weights_only=True))
         return self.model
 

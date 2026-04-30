@@ -54,6 +54,7 @@ def load_data(data_cfg: dict) -> pl.DataFrame:
     return df
 from datasets.dti_dataset import DTIDataset, build_collate_fn
 from encoders.protein.cnn_encoder import ProteinCNNEncoder
+from encoders.protein.esm2_encoder import ESM2Encoder
 from encoders.smiles.fingerprint_mlp_encoder import FingerprintMLPEncoder
 from encoders.smiles.gcn_encoder import GCNEncoder
 from fusion.cross_attention_fusion import CrossAttentionFusion
@@ -61,6 +62,7 @@ from fusion.mlp_fusion import MLPFusion
 from models.multimodal import MultimodalDTI
 from processing.base import InputProcessor
 from processing.protein.cnn_tokenizer import CNNTokenizer
+from processing.protein.esm2_processor import ESM2Processor
 from processing.smiles.fingerprint_processor import FingerprintProcessor
 from processing.smiles.graph_processor import GraphProcessor
 from training.metrics import compute_confusion_matrix
@@ -120,9 +122,13 @@ def _build_one_protein(enc_cfg: dict) -> tuple[InputProcessor, nn.Module]:
             kernel_sizes=params.get("kernel_sizes", [3, 7, 15]),
         )
     elif enc_type == "esm2":
-        raise NotImplementedError(
-            "ESM-2 encoder is a placeholder. "
-            "Implement ESM2Encoder and its matching processor."
+        model_name = params.get("model_name", "facebook/esm2_t33_650M_UR50D")
+        max_len = params.get("max_seq_len", 1000)
+        processor = ESM2Processor(model_name=model_name, max_len=max_len)
+        encoder = ESM2Encoder(
+            model_name=model_name,
+            out_dim=params.get("out_dim", 256),
+            freeze=params.get("freeze", True),
         )
     else:
         raise ValueError(f"Unknown protein encoder type: {enc_type}")
@@ -203,6 +209,12 @@ def main() -> None:
         type=str,
         default=str(ROOT_DIR / "configs" / "default.yaml"),
         help="Path to YAML config file",
+    )
+    parser.add_argument(
+        "--model_name",
+        type=str,
+        default="best_model.pt",
+        help="Filename for the saved checkpoint (e.g. gcn_cnn.pt)",
     )
     args = parser.parse_args()
 
@@ -302,6 +314,7 @@ def main() -> None:
         optimizer=optimizer,
         criterion=criterion,
         device=device,
+        checkpoint_filename=args.model_name,
         patience=train_cfg.get("patience", 8),
     )
     model = trainer.fit(train_loader, val_loader, epochs=train_cfg.get("epochs", 50))
