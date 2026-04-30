@@ -150,9 +150,11 @@ class Trainer:
 
 
 def _to_device(obj, device: torch.device):
-    """Move a tensor, PyG Batch, or dict of tensors to *device*."""
+    """Move a tensor, PyG Batch, list, or dict of tensors to *device*."""
+    if isinstance(obj, (list, tuple)):
+        return type(obj)(_to_device(item, device) for item in obj)
     if hasattr(obj, "to"):
         return obj.to(device)
     if isinstance(obj, dict):
-        return {k: v.to(device) for k, v in obj.items()}
+        return {k: _to_device(v, device) for k, v in obj.items()}
     return obj

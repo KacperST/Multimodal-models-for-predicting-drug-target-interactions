@@ -59,17 +59,24 @@ class ESM2Encoder(Encoder):
         Returns:
             Tensor of shape ``(B, output_dim)``.
         """
-        outputs = self.esm2(
-            input_ids=batch["input_ids"],
-            attention_mask=batch["attention_mask"],
-        )
+        # When the backbone is frozen we must disable the computation
+        # graph — otherwise PyTorch stores all intermediate activations
+        # for backprop, which easily causes OOM on large models.
+        frozen = not any(p.requires_grad for p in self.esm2.parameters())
+        ctx = torch.no_grad() if frozen else torch.enable_grad()
 
-        # Mean-pool over non-padding tokens
-        last_hidden = outputs.last_hidden_state  # (B, L, H)
-        mask = batch["attention_mask"].unsqueeze(-1).float()  # (B, L, 1)
-        summed = (last_hidden * mask).sum(dim=1)  # (B, H)
-        counts = mask.sum(dim=1).clamp(min=1)  # (B, 1)
-        pooled = summed / counts  # (B, H)
+        with ctx:
+            outputs = self.esm2(
+                input_ids=batch["input_ids"],
+                attention_mask=batch["attention_mask"],
+            )
+
+            # Mean-pool over non-padding tokens
+            last_hidden = outputs.last_hidden_state  # (B, L, H)
+            mask = batch["attention_mask"].unsqueeze(-1).float()  # (B, L, 1)
+            summed = (last_hidden * mask).sum(dim=1)  # (B, H)
+            counts = mask.sum(dim=1).clamp(min=1)  # (B, 1)
+            pooled = summed / counts  # (B, H)
 
         if self.projection is not None:
             pooled = self.projection(pooled)

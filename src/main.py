@@ -53,6 +53,7 @@ def load_data(data_cfg: dict) -> pl.DataFrame:
     df = add_activity_label(df, pki_threshold=data_cfg.get("pki_threshold", 7.0))
     return df
 from datasets.dti_dataset import DTIDataset, build_collate_fn
+from encoders.protein.cached_esm2_encoder import CachedESM2Encoder
 from encoders.protein.cnn_encoder import ProteinCNNEncoder
 from encoders.protein.esm2_encoder import ESM2Encoder
 from encoders.smiles.fingerprint_mlp_encoder import FingerprintMLPEncoder
@@ -61,6 +62,7 @@ from fusion.cross_attention_fusion import CrossAttentionFusion
 from fusion.mlp_fusion import MLPFusion
 from models.multimodal import MultimodalDTI
 from processing.base import InputProcessor
+from processing.protein.cached_esm2_processor import CachedESM2Processor
 from processing.protein.cnn_tokenizer import CNNTokenizer
 from processing.protein.esm2_processor import ESM2Processor
 from processing.smiles.fingerprint_processor import FingerprintProcessor
@@ -129,6 +131,16 @@ def _build_one_protein(enc_cfg: dict) -> tuple[InputProcessor, nn.Module]:
             model_name=model_name,
             out_dim=params.get("out_dim", 256),
             freeze=params.get("freeze", True),
+        )
+    elif enc_type == "esm2_cached":
+        cache_path = params["cache_path"]
+        # Resolve relative paths w.r.t. project root
+        if not Path(cache_path).is_absolute():
+            cache_path = str(ROOT_DIR / cache_path)
+        processor = CachedESM2Processor(cache_path=cache_path)
+        encoder = CachedESM2Encoder(
+            input_dim=processor.embedding_dim,
+            out_dim=params.get("out_dim", 256),
         )
     else:
         raise ValueError(f"Unknown protein encoder type: {enc_type}")
