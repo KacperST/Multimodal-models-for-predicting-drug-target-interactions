@@ -1,0 +1,55 @@
+data:
+  clean_path: datasets/clean.parquet
+  path: datasets/BindingDB_All.tsv
+  pki_threshold: 7.0
+  split_ratios:
+  - 0.7
+  - 0.1
+  - 0.2
+smiles_encoders:
+- type: gcn
+  params:
+    hidden_dim: 256
+    num_layers: 3
+- type: fingerprint_mlp
+  params:
+    fp_type: ecfp
+    fp_params:
+      radius: 2
+      n_bits: 1024
+    hidden_dim: 512
+    out_dim: 256
+    dropout: 0.2
+- type: chembert
+  params:
+    cache_path: datasets/ChemBERTa-zinc-base-v1.pt
+    out_dim: 256
+protein_encoders:
+- type: cnn
+  params:
+    embed_dim: 256
+    num_filters: 128
+    kernel_sizes:
+    - 3
+    - 7
+    - 15
+    max_seq_len: 1000
+- type: esm2
+  params:
+    cache_path: datasets/esm2_t33_650M_UR50D.pt
+    out_dim: 256
+fusion:
+  type: mlp
+  params:
+    hidden_dims:
+    - 256
+    - 64
+    dropout: 0.3
+training:
+  batch_size: 128
+  learning_rate: 0.0001
+  weight_decay: 1.0e-05
+  epochs: 50
+  patience: 8
+  num_workers: 4
+  device: auto
