@@ -53,3 +53,16 @@ def remove_duplicates(df: pl.DataFrame) -> pl.DataFrame:
 def add_activity_label(df: pl.DataFrame, pki_threshold: float = 7.0) -> pl.DataFrame:
     """Add a boolean ``is_active`` column based on pKi threshold."""
     return df.with_columns([(pl.col("pKi") >= pki_threshold).alias("is_active")])
+
+def remove_invalid_smiles(df: pl.DataFrame) -> pl.DataFrame:
+    from rdkit import Chem
+    
+    def is_valid(smi: str) -> bool:
+        try:
+            return Chem.MolFromSmiles(smi) is not None
+        except Exception:
+            return False
+            
+    print("Validating SMILES strings with RDKit...")
+    valid_mask = df["Ligand SMILES"].map_elements(is_valid, return_dtype=pl.Boolean)
+    return df.filter(valid_mask)

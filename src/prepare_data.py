@@ -21,6 +21,7 @@ from data.transform import (
     remove_duplicates,
     remove_nulls,
     tranform_ki_to_log_ki,
+    remove_invalid_smiles,
 )
 
 ROOT_DIR = Path(__file__).resolve().parent
@@ -54,6 +55,7 @@ def main() -> None:
 
     df = remove_cx_notation(df)
     df = remove_nulls(df)
+    df = remove_invalid_smiles(df)
     df = remove_duplicates(df)
     df = tranform_ki_to_log_ki(df)
     df = add_activity_label(df, pki_threshold=args.pki_threshold)
