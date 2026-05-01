@@ -1,4 +1,4 @@
-q"""Pre-compute ESM-2 embeddings for all unique protein sequences.
+"""Pre-compute ESM-2 embeddings for all unique protein sequences.
 
 Run this **once** before training.  The script extracts unique sequences
 from the clean Parquet dataset, runs them through the ESM-2 model in

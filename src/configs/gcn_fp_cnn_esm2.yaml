@@ -32,28 +32,24 @@ protein_encoders:
       kernel_sizes: [3, 7, 15]
       max_seq_len: 1000
 
-  - type: "esm2"
+  - type: "esm2_cached"
     params:
-      model_name: "facebook/esm2_t33_650M_UR50D"
+      cache_path: "datasets/esm2_t33_650M_UR50D.pt"
       out_dim: 256
-      freeze: true
-      max_seq_len: 1000
 
 # smiles_dim = 256 (GCN) + 256 (FP) = 512
 # protein_dim = 384 (CNN) + 256 (ESM-2) = 640
 fusion:
-  type: "cross_attention"
+  type: "mlp"
   params:
-    proj_dim: 256
-    num_heads: 4
-    hidden_dim: 128
+    hidden_dims: [256, 64]
     dropout: 0.3
 
 training:
-  batch_size: 128
+  batch_size: 256
   learning_rate: 0.0001
   weight_decay: 0.00001
-  epochs: 50
+  epochs: 100
   patience: 10
-  num_workers: 4
+  num_workers: 8
   device: "auto"
