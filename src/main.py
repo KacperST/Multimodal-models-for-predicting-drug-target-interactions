@@ -218,10 +218,13 @@ def main() -> None:
     parser.add_argument(
         "--model_name",
         type=str,
-        default="best_model.pt",
-        help="Filename for the saved checkpoint (e.g. gcn_cnn.pt)",
+        default=None,
+        help="Filename for the saved checkpoint (e.g. gcn_cnn.pt). Defaults to config name.",
     )
     args = parser.parse_args()
+
+    if args.model_name is None:
+        args.model_name = Path(args.config).stem + ".pt"
 
     # ── Load config ──────────────────────────────────────────────
     with open(args.config) as f:
