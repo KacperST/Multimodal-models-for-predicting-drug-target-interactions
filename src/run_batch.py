@@ -44,6 +44,8 @@ def worker(slot_id, cpu_range, q):
         env["MKL_NUM_THREADS"] = "4"
         env["OPENBLAS_NUM_THREADS"] = "4"
         env["POLARS_MAX_THREADS"] = "4"
+        # Zapobiega opóźnieniom w logach (wymusza natychmiastowy zapis do pliku bez bufforowania)
+        env["PYTHONUNBUFFERED"] = "1"
 
         with open(log_file, "w") as f:
             # Uruchomienie procesu podrzędnego

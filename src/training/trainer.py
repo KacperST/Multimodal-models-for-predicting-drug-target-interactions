@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import sys
+import time
 from pathlib import Path
 
 import numpy as np
@@ -51,7 +53,7 @@ class Trainer:
         """Run one training epoch. Returns average loss."""
         self.model.train()
         total_loss = 0.0
-        pbar = tqdm(loader, desc="Train", leave=False)
+        pbar = tqdm(loader, desc="Train", leave=False, disable=not sys.stdout.isatty())
 
         for smiles_batch, protein_batch, y in pbar:
             smiles_batch = _to_device(smiles_batch, self.device)
@@ -77,7 +79,7 @@ class Trainer:
         all_labels: list[float] = []
         all_probs: list[float] = []
 
-        pbar = tqdm(loader, desc="Eval", leave=False)
+        pbar = tqdm(loader, desc="Eval", leave=False, disable=not sys.stdout.isatty())
         for smiles_batch, protein_batch, y in pbar:
             smiles_batch = _to_device(smiles_batch, self.device)
             protein_batch = _to_device(protein_batch, self.device)
@@ -112,18 +114,24 @@ class Trainer:
         best_epoch = 0
 
         for epoch in range(1, epochs + 1):
+            epoch_start = time.time()
+            
             train_loss = self.train_epoch(train_loader)
             val_metrics = self.eval_epoch(val_loader)
             val_loss = val_metrics["loss"]
             val_auc = val_metrics["auc"]
 
             self.scheduler.step(val_loss)
+            
+            epoch_time = time.time() - epoch_start
 
             print(
                 f"Epoch {epoch:03d} | "
+                f"time={epoch_time:.1f}s | "
                 f"train_loss={train_loss:.4f} | "
                 f"val_loss={val_loss:.4f} | "
-                f"val_auc={val_auc:.4f}"
+                f"val_auc={val_auc:.4f}",
+                flush=True
             )
 
             if val_auc > best_val_auc:
