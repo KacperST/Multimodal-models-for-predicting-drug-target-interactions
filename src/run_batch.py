@@ -36,9 +36,18 @@ def worker(slot_id, cpu_range, q):
             "--config", config_path
         ]
         
+        # Zabezpieczenie przed tzw. "Thread Oversubscription Deadlock"
+        env = os.environ.copy()
+        # Skoro dajesz 4 rdzenie na model (np. 0-3), powiedzmy bibliotekom C++, żeby nie próbowały
+        # używać domyślnych 32/64 wątków (bo system wciąż widzi wszystkie procesory).
+        env["OMP_NUM_THREADS"] = "4"
+        env["MKL_NUM_THREADS"] = "4"
+        env["OPENBLAS_NUM_THREADS"] = "4"
+        env["POLARS_MAX_THREADS"] = "4"
+
         with open(log_file, "w") as f:
             # Uruchomienie procesu podrzędnego
-            result = subprocess.run(cmd, stdout=f, stderr=subprocess.STDOUT)
+            result = subprocess.run(cmd, stdout=f, stderr=subprocess.STDOUT, env=env)
             
         if result.returncode == 0:
             print(f"[Slot {slot_id} | CPU {cpu_range}] SUKCES: {config_name}")

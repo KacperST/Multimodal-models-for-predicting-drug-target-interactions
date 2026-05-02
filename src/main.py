@@ -285,6 +285,11 @@ def main() -> None:
     collate_fn = build_collate_fn(smiles_processors, protein_processors)
     batch_size = train_cfg.get("batch_size", 256)
     n_workers = train_cfg.get("num_workers", 4)
+    # Zabezpieczenie: Dataloader z num_workers>0 potrafi wejść w zakleszczenie, 
+    # gdy jest sztucznie przypinany przez taskset. Wyłączamy multiprocessing dla bezpieczeństwa.
+    import os
+    if "OMP_NUM_THREADS" in os.environ:
+        n_workers = 0
 
     train_loader = DataLoader(
         train_ds, batch_size=batch_size, shuffle=True,
