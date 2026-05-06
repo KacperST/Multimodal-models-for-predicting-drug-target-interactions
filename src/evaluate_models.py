@@ -28,7 +28,7 @@ import torch.nn as nn
 import yaml
 from torch.utils.data import DataLoader
 
-from data.transform import train_test_val_split
+from data.transform import train_val_test_split
 from datasets.dti_dataset import DTIDataset, build_collate_fn
 from main import (  # type: ignore[import-not-found]
     ROOT_DIR,
@@ -265,7 +265,7 @@ def main() -> None:
     shared_df = load_data(reference_cfg["data"])
     print(f"Loaded dataset with {shared_df.height} rows")
 
-    split_frames = train_test_val_split(
+    split_frames = train_val_test_split(
         shared_df,
         proportions=reference_cfg["data"].get("split_ratios", [0.7, 0.1, 0.2]),
     )

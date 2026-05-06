@@ -29,9 +29,27 @@ from data.transform import (
     remove_cx_notation,
     remove_duplicates,
     remove_nulls,
-    train_test_val_split,
     tranform_ki_to_log_ki,
+    train_val_test_split_scaffold
 )
+
+from datasets.dti_dataset import DTIDataset, build_collate_fn
+from encoders.protein.cnn_encoder import ProteinCNNEncoder
+from encoders.protein.esm2_encoder import ESM2Encoder
+from encoders.smiles.chembert_encoder import ChemBERTEncoder
+from encoders.smiles.fingerprint_mlp_encoder import FingerprintMLPEncoder
+from encoders.smiles.gcn_encoder import GCNEncoder
+from fusion.cross_attention_fusion import CrossAttentionFusion
+from fusion.mlp_fusion import MLPFusion
+from models.multimodal import MultimodalDTI
+from processing.base import InputProcessor
+from processing.protein.cnn_tokenizer import CNNTokenizer
+from processing.protein.esm2_processor import ESM2Processor
+from processing.smiles.chembert_processor import ChemBERTProcessor
+from processing.smiles.fingerprint_processor import FingerprintProcessor
+from processing.smiles.graph_processor import GraphProcessor
+from training.metrics import compute_confusion_matrix
+from training.trainer import Trainer
 
 
 def load_data(data_cfg: dict) -> pl.DataFrame:
@@ -52,23 +70,6 @@ def load_data(data_cfg: dict) -> pl.DataFrame:
     df = tranform_ki_to_log_ki(df)
     df = add_activity_label(df, pki_threshold=data_cfg.get("pki_threshold", 7.0))
     return df
-from datasets.dti_dataset import DTIDataset, build_collate_fn
-from encoders.protein.cnn_encoder import ProteinCNNEncoder
-from encoders.protein.esm2_encoder import ESM2Encoder
-from encoders.smiles.chembert_encoder import ChemBERTEncoder
-from encoders.smiles.fingerprint_mlp_encoder import FingerprintMLPEncoder
-from encoders.smiles.gcn_encoder import GCNEncoder
-from fusion.cross_attention_fusion import CrossAttentionFusion
-from fusion.mlp_fusion import MLPFusion
-from models.multimodal import MultimodalDTI
-from processing.base import InputProcessor
-from processing.protein.cnn_tokenizer import CNNTokenizer
-from processing.protein.esm2_processor import ESM2Processor
-from processing.smiles.chembert_processor import ChemBERTProcessor
-from processing.smiles.fingerprint_processor import FingerprintProcessor
-from processing.smiles.graph_processor import GraphProcessor
-from training.metrics import compute_confusion_matrix
-from training.trainer import Trainer
 
 ROOT_DIR = Path(__file__).resolve().parent
 
@@ -247,7 +248,7 @@ def main() -> None:
 
     # ── 2. Train / val / test split ──────────────────────────────
     ratios = data_cfg.get("split_ratios", [0.7, 0.1, 0.2])
-    train_df, val_df, test_df = train_test_val_split(df, proportions=ratios)
+    train_df, val_df, test_df = train_val_test_split_scaffold(df, proportions=ratios)
     print(f"Train: {train_df.height}  Val: {val_df.height}  Test: {test_df.height}")
 
     # ── 3. Build processors and encoders ─────────────────────────
