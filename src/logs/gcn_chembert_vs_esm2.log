@@ -1,0 +1,45 @@
+/home/kstankiewicz/DTI/Multimodal-models-for-predicting-drug-target-interactions/.venv/lib/python3.11/site-packages/outdated/__init__.py:36: UserWarning: pkg_resources is deprecated as an API. See https://setuptools.pypa.io/en/latest/pkg_resources.html. The pkg_resources package is slated for removal as early as 2025-11-30. Refrain from using this package or pin to Setuptools<81.
+  from pkg_resources import parse_version
+Traceback (most recent call last):
+  File "/home/kstankiewicz/DTI/Multimodal-models-for-predicting-drug-target-interactions/src/main.py", line 58, in <module>
+    from encoders.smiles.chembert_encoder import ChemBERTEncoder
+  File "/home/kstankiewicz/DTI/Multimodal-models-for-predicting-drug-target-interactions/src/encoders/smiles/__init__.py", line 1, in <module>
+    from .gcn_encoder import GCNEncoder
+  File "/home/kstankiewicz/DTI/Multimodal-models-for-predicting-drug-target-interactions/src/encoders/smiles/gcn_encoder.py", line 6, in <module>
+    from ogb.graphproppred.mol_encoder import AtomEncoder
+  File "/home/kstankiewicz/DTI/Multimodal-models-for-predicting-drug-target-interactions/.venv/lib/python3.11/site-packages/ogb/graphproppred/__init__.py", line 5, in <module>
+    from .dataset_pyg import PygGraphPropPredDataset
+  File "/home/kstankiewicz/DTI/Multimodal-models-for-predicting-drug-target-interactions/.venv/lib/python3.11/site-packages/ogb/graphproppred/dataset_pyg.py", line 6, in <module>
+    from torch_geometric.data import InMemoryDataset
+  File "/home/kstankiewicz/DTI/Multimodal-models-for-predicting-drug-target-interactions/.venv/lib/python3.11/site-packages/torch_geometric/__init__.py", line 22, in <module>
+    import torch_geometric.datasets
+  File "/home/kstankiewicz/DTI/Multimodal-models-for-predicting-drug-target-interactions/.venv/lib/python3.11/site-packages/torch_geometric/datasets/__init__.py", line 80, in <module>
+    from .web_qsp_dataset import WebQSPDataset, CWQDataset
+  File "/home/kstankiewicz/DTI/Multimodal-models-for-predicting-drug-target-interactions/.venv/lib/python3.11/site-packages/torch_geometric/datasets/web_qsp_dataset.py", line 11, in <module>
+    from torch_geometric.llm.large_graph_indexer import (
+  File "/home/kstankiewicz/DTI/Multimodal-models-for-predicting-drug-target-interactions/.venv/lib/python3.11/site-packages/torch_geometric/llm/__init__.py", line 2, in <module>
+    from .rag_loader import RAGQueryLoader
+  File "/home/kstankiewicz/DTI/Multimodal-models-for-predicting-drug-target-interactions/.venv/lib/python3.11/site-packages/torch_geometric/llm/rag_loader.py", line 5, in <module>
+    from torch_geometric.llm.utils.vectorrag import VectorRetriever
+  File "/home/kstankiewicz/DTI/Multimodal-models-for-predicting-drug-target-interactions/.venv/lib/python3.11/site-packages/torch_geometric/llm/utils/__init__.py", line 1, in <module>
+    from .backend_utils import *  # noqa
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/kstankiewicz/DTI/Multimodal-models-for-predicting-drug-target-interactions/.venv/lib/python3.11/site-packages/torch_geometric/llm/utils/backend_utils.py", line 36, in <module>
+    from torch_geometric.llm.models import SentenceTransformer
+  File "/home/kstankiewicz/DTI/Multimodal-models-for-predicting-drug-target-interactions/.venv/lib/python3.11/site-packages/torch_geometric/llm/models/__init__.py", line 3, in <module>
+    from .llm import LLM
+  File "/home/kstankiewicz/DTI/Multimodal-models-for-predicting-drug-target-interactions/.venv/lib/python3.11/site-packages/torch_geometric/llm/models/llm.py", line 9, in <module>
+    from transformers.tokenization_utils_base import BatchEncoding
+  File "/home/kstankiewicz/DTI/Multimodal-models-for-predicting-drug-target-interactions/.venv/lib/python3.11/site-packages/transformers/__init__.py", line 826, in <module>
+    for _proc_file in sorted((Path(__file__).parent / "models").rglob("image_processing_*.py")):
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/kstankiewicz/.local/share/uv/python/cpython-3.11.15-linux-x86_64-gnu/lib/python3.11/pathlib.py", line 968, in rglob
+    for p in selector.select_from(self):
+  File "/home/kstankiewicz/.local/share/uv/python/cpython-3.11.15-linux-x86_64-gnu/lib/python3.11/pathlib.py", line 407, in _select_from
+    for starting_point in self._iterate_directories(parent_path, is_dir, scandir):
+  File "/home/kstankiewicz/.local/share/uv/python/cpython-3.11.15-linux-x86_64-gnu/lib/python3.11/pathlib.py", line 397, in _iterate_directories
+    for p in self._iterate_directories(path, is_dir, scandir):
+  File "/home/kstankiewicz/.local/share/uv/python/cpython-3.11.15-linux-x86_64-gnu/lib/python3.11/pathlib.py", line 387, in _iterate_directories
+    entries = list(scandir_it)
+              ^^^^^^^^^^^^^^^^
+KeyboardInterrupt

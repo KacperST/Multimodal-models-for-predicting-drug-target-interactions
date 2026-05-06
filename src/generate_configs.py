@@ -23,7 +23,7 @@ base_config = {
         "batch_size": 128,
         "learning_rate": 0.0001,
         "weight_decay": 0.00001,
-        "epochs": 50,
+        "epochs": 100,
         "patience": 8,
         "num_workers": 4,
         "device": "auto"
@@ -32,7 +32,7 @@ base_config = {
 
 smiles_options = {
     "gcn": {"type": "gcn", "params": {"hidden_dim": 256, "num_layers": 3}},
-    "fp": {"type": "fingerprint_mlp", "params": {"fp_type": "ecfp", "fp_params": {"radius": 2, "n_bits": 1024}, "hidden_dim": 512, "out_dim": 256, "dropout": 0.2}},
+    "fp": {"type": "fingerprint_mlp", "params": {"fp_type": "ecfp", "fp_params": {"radius": 2, "fp_size": 1024}, "hidden_dim": 512, "out_dim": 256, "dropout": 0.2}},
     "chembert": {"type": "chembert", "params": {"cache_path": "datasets/ChemBERTa-zinc-base-v1.pt", "out_dim": 256}}
 }
 
@@ -57,7 +57,7 @@ for i in range(1, len(protein_keys) + 1):
     for combo in itertools.combinations(protein_keys, i):
         protein_combos.append(list(combo))
 
-out_dir = Path("/home/kacper/DataScience/magisterka/Multimodal-models-for-predicting-drug-target-interactions/src/configs")
+out_dir = Path("/home/kstankiewicz/DTI/Multimodal-models-for-predicting-drug-target-interactions/src/configs")
 
 import os
 # delete existing config files so we don't have overlapping old variants like gcn_cnn_esm2.yaml if we want to replace them all with systematic names

@@ -1,0 +1,112 @@
+/home/kstankiewicz/DTI/Multimodal-models-for-predicting-drug-target-interactions/.venv/lib/python3.11/site-packages/outdated/__init__.py:36: UserWarning: pkg_resources is deprecated as an API. See https://setuptools.pypa.io/en/latest/pkg_resources.html. The pkg_resources package is slated for removal as early as 2025-11-30. Refrain from using this package or pin to Setuptools<81.
+  from pkg_resources import parse_version
+Using device: cuda
+Loading clean data from: /home/kstankiewicz/DTI/Multimodal-models-for-predicting-drug-target-interactions/src/datasets/clean.parquet
+Dataset size: 451858
+Train: 316731  Val: 45479  Test: 89648
+ChemBERTProcessor: loaded 236422 embeddings (dim=768) from /home/kstankiewicz/DTI/Multimodal-models-for-predicting-drug-target-interactions/src/datasets/ChemBERTa-zinc-base-v1.pt
+ESM2Processor: loaded 3580 embeddings (dim=1280) from /home/kstankiewicz/DTI/Multimodal-models-for-predicting-drug-target-interactions/src/datasets/esm2_t33_650M_UR50D.pt
+SMILES encoders:  ['FingerprintMLPEncoder', 'ChemBERTEncoder']
+Protein encoders: ['ProteinCNNEncoder', 'ESM2Encoder']
+MultimodalDTI(
+  (smiles_encoders): ModuleList(
+    (0): FingerprintMLPEncoder(
+      (mlp): Sequential(
+        (0): Linear(in_features=1024, out_features=512, bias=True)
+        (1): BatchNorm1d(512, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (2): ReLU()
+        (3): Dropout(p=0.2, inplace=False)
+        (4): Linear(in_features=512, out_features=256, bias=True)
+        (5): BatchNorm1d(256, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (6): ReLU()
+      )
+    )
+    (1): ChemBERTEncoder(
+      (projection): Sequential(
+        (0): Linear(in_features=768, out_features=256, bias=True)
+        (1): LayerNorm((256,), eps=1e-05, elementwise_affine=True)
+        (2): ReLU()
+      )
+    )
+  )
+  (protein_encoders): ModuleList(
+    (0): ProteinCNNEncoder(
+      (embedding): Embedding(21, 256, padding_idx=0)
+      (conv_blocks): ModuleList(
+        (0): Sequential(
+          (0): Conv1d(256, 128, kernel_size=(3,), stride=(1,), padding=(1,))
+          (1): BatchNorm1d(128, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+          (2): ReLU()
+          (3): Conv1d(128, 128, kernel_size=(3,), stride=(1,), padding=(1,))
+          (4): BatchNorm1d(128, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+          (5): ReLU()
+        )
+        (1): Sequential(
+          (0): Conv1d(256, 128, kernel_size=(7,), stride=(1,), padding=(3,))
+          (1): BatchNorm1d(128, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+          (2): ReLU()
+          (3): Conv1d(128, 128, kernel_size=(7,), stride=(1,), padding=(3,))
+          (4): BatchNorm1d(128, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+          (5): ReLU()
+        )
+        (2): Sequential(
+          (0): Conv1d(256, 128, kernel_size=(15,), stride=(1,), padding=(7,))
+          (1): BatchNorm1d(128, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+          (2): ReLU()
+          (3): Conv1d(128, 128, kernel_size=(15,), stride=(1,), padding=(7,))
+          (4): BatchNorm1d(128, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+          (5): ReLU()
+        )
+      )
+    )
+    (1): ESM2Encoder(
+      (projection): Sequential(
+        (0): Linear(in_features=1280, out_features=256, bias=True)
+        (1): LayerNorm((256,), eps=1e-05, elementwise_affine=True)
+        (2): ReLU()
+      )
+    )
+  )
+  (fusion): MLPFusion(
+    (classifier): Sequential(
+      (0): Linear(in_features=1152, out_features=256, bias=True)
+      (1): BatchNorm1d(256, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      (2): ReLU()
+      (3): Dropout(p=0.3, inplace=False)
+      (4): Linear(in_features=256, out_features=64, bias=True)
+      (5): BatchNorm1d(64, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      (6): ReLU()
+      (7): Dropout(p=0.3, inplace=False)
+      (8): Linear(in_features=64, out_features=1, bias=True)
+    )
+  )
+)
+Epoch 001 | time=357.7s | train_loss=0.5288 | val_loss=0.4686 | val_auc=0.8570
+  ✓ New best model (epoch 1, val_loss=0.4686, val_auc=0.8570) saved to checkpoints/fp_chembert_vs_cnn_esm2.pt
+Epoch 002 | time=358.1s | train_loss=0.4398 | val_loss=0.4290 | val_auc=0.8838
+  ✓ New best model (epoch 2, val_loss=0.4290, val_auc=0.8838) saved to checkpoints/fp_chembert_vs_cnn_esm2.pt
+Epoch 003 | time=357.7s | train_loss=0.3961 | val_loss=0.4222 | val_auc=0.8947
+  ✓ New best model (epoch 3, val_loss=0.4222, val_auc=0.8947) saved to checkpoints/fp_chembert_vs_cnn_esm2.pt
+Epoch 004 | time=355.9s | train_loss=0.3664 | val_loss=0.4161 | val_auc=0.9014
+  ✓ New best model (epoch 4, val_loss=0.4161, val_auc=0.9014) saved to checkpoints/fp_chembert_vs_cnn_esm2.pt
+Epoch 005 | time=354.3s | train_loss=0.3438 | val_loss=0.3959 | val_auc=0.9038
+  ✓ New best model (epoch 5, val_loss=0.3959, val_auc=0.9038) saved to checkpoints/fp_chembert_vs_cnn_esm2.pt
+Epoch 006 | time=354.5s | train_loss=0.3261 | val_loss=0.4000 | val_auc=0.9087
+Epoch 007 | time=354.3s | train_loss=0.3103 | val_loss=0.4232 | val_auc=0.9094
+Epoch 008 | time=353.9s | train_loss=0.2976 | val_loss=0.4126 | val_auc=0.9098
+Epoch 009 | time=354.5s | train_loss=0.2859 | val_loss=0.4349 | val_auc=0.9084
+Epoch 010 | time=354.1s | train_loss=0.2763 | val_loss=0.4408 | val_auc=0.9104
+Epoch 011 | time=354.1s | train_loss=0.2668 | val_loss=0.4338 | val_auc=0.9121
+Epoch 012 | time=355.2s | train_loss=0.2358 | val_loss=0.4276 | val_auc=0.9166
+Epoch 013 | time=354.1s | train_loss=0.2250 | val_loss=0.4363 | val_auc=0.9165
+Early stopping — no improvement for 8 epochs
+
+Best model: epoch 5, val_loss=0.3959, val_auc=0.9165
+
+═══ Test Results ═══
+           auc: 0.9021
+         auprc: 0.8946
+            f1: 0.8080
+     precision: 0.8264
+        recall: 0.7904
+          loss: 0.3993

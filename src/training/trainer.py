@@ -108,9 +108,9 @@ class Trainer:
         """Train the model with early stopping and checkpointing.
 
         Returns:
-            The model with the best validation AUC weights loaded.
+            The model with the best validation loss weights loaded.
         """
-        best_val_auc = 0.0
+        best_val_loss = float("inf")
         best_epoch = 0
 
         for epoch in range(1, epochs + 1):
@@ -134,13 +134,14 @@ class Trainer:
                 flush=True
             )
 
-            if val_auc > best_val_auc:
-                best_val_auc = val_auc
+            if val_loss < best_val_loss:
+                best_val_loss = val_loss
                 best_epoch = epoch
                 ckpt_path = self.checkpoint_dir / self.checkpoint_filename
                 torch.save(self.model.state_dict(), ckpt_path)
                 print(
-                    f"  ✓ New best model (epoch {epoch}, val_auc={val_auc:.4f})"
+                    f"  ✓ New best model (epoch {epoch}, val_loss={val_loss:.4f}, val_auc={val_auc:.4f}) saved to {ckpt_path}",
+                    flush=True
                 )
 
             if epoch - best_epoch >= self.patience:
@@ -149,7 +150,7 @@ class Trainer:
                 )
                 break
 
-        print(f"\nBest model: epoch {best_epoch}, val_auc={best_val_auc:.4f}")
+        print(f"\nBest model: epoch {best_epoch}, val_loss={best_val_loss:.4f}, val_auc={val_auc:.4f}")
 
         # Load best checkpoint
         best_ckpt = self.checkpoint_dir / self.checkpoint_filename
