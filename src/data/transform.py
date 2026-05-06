@@ -1,9 +1,4 @@
 import polars as pl
-import torch
-from torch_geometric.data import Data
-from ogb.utils import smiles2graph
-from rdkit import Chem
-from tqdm import tqdm
 
 
 def remove_nulls(df: pl.DataFrame) -> pl.DataFrame:
@@ -45,73 +40,6 @@ def remove_cx_notation(df: pl.DataFrame):
     )
 
 
-def create_pyg_dataset(smiles_list, y_values=None, with_features=False):
-    """
-    Konwertuje listę SMILES na listę obiektów PyTorch Geometric Data.
-
-    Args:
-        smiles_list: Lista lub Series ze strukturami SMILES.
-        y_values: Opcjonalna lista wartości docelowych (np. Twoje pKi).
-        with_features: Jeśli True, używa bogatych cech OGB. Jeśli False, tworzy "czysty" graf.
-    """
-    pyg_graphs = []
-
-    print(f"Konwersja {len(smiles_list)} SMILES na grafy (with_features={with_features})...")
-
-    for i, smiles in tqdm(enumerate(smiles_list)):
-        try:
-            if with_features:
-                # 1. Features from OGB
-                graph = smiles2graph(smiles)
-
-                x = torch.tensor(graph["node_feat"], dtype=torch.long)
-                edge_index = torch.tensor(graph["edge_index"], dtype=torch.long)
-                edge_attr = torch.tensor(graph["edge_feat"], dtype=torch.long)
-
-            else:
-                # 2. No features at all
-                mol = Chem.MolFromSmiles(smiles)
-                if mol is None:
-                    continue
-
-                node_features = [[atom.GetAtomicNum()] for atom in mol.GetAtoms()]
-                x = torch.tensor(node_features, dtype=torch.float)
-
-                edges = []
-                for bond in mol.GetBonds():
-                    i = bond.GetBeginAtomIdx()
-                    j = bond.GetEndAtomIdx()
-                    edges.append([i, j])
-                    edges.append([j, i])
-
-                edge_index = torch.tensor(edges, dtype=torch.long).t().contiguous()
-                edge_attr = None
-
-            y = torch.tensor([y_values[i]], dtype=torch.float) if y_values is not None else None
-
-            data = Data(x=x, edge_index=edge_index, edge_attr=edge_attr, y=y)
-            pyg_graphs.append(data)
-
-        except Exception as e:
-            print(e)
-            continue
-
-    return pyg_graphs
-
-
-def tokenize_sequences(df: pl.DataFrame, char_to_idx: dict, max_len: int = 1000) -> pl.DataFrame:
-    unk_idx = char_to_idx.get("<UNK>", 0)
-
-    return df.with_columns(
-        pl.col("Full_Protein_Sequence")
-        .str.to_uppercase()
-        .str.split("")
-        .list.eval(pl.element().filter(pl.element() != ""))
-        .list.tail(max_len)
-        .list.eval(pl.element().replace(char_to_idx, default=unk_idx).cast(pl.Int64))
-        .alias("Tokenized_Sequence")
-    )
-
 def remove_duplicates(df: pl.DataFrame) -> pl.DataFrame:
     return df.group_by(
                 ["Ligand SMILES", "Full_Protein_Sequence"]
@@ -120,4 +48,21 @@ def remove_duplicates(df: pl.DataFrame) -> pl.DataFrame:
                     pl.col("Ki (nM)").mean().alias("Ki (nM)"),
                 ]
             ).select(["Ligand SMILES", "Full_Protein_Sequence", "Ki (nM)"])
-        
+
+
+def add_activity_label(df: pl.DataFrame, pki_threshold: float = 7.0) -> pl.DataFrame:
+    """Add a boolean ``is_active`` column based on pKi threshold."""
+    return df.with_columns([(pl.col("pKi") >= pki_threshold).alias("is_active")])
+
+def remove_invalid_smiles(df: pl.DataFrame) -> pl.DataFrame:
+    from rdkit import Chem
+    
+    def is_valid(smi: str) -> bool:
+        try:
+            return Chem.MolFromSmiles(smi) is not None
+        except Exception:
+            return False
+            
+    print("Validating SMILES strings with RDKit...")
+    valid_mask = df["Ligand SMILES"].map_elements(is_valid, return_dtype=pl.Boolean)
+    return df.filter(valid_mask)

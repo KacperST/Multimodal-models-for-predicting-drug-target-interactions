@@ -1,214 +1,342 @@
+"""Multimodal DTI — main entry point.
+
+Reads a YAML experiment config, builds all components (processors,
+encoders, fusion, dataset, trainer), and runs the full pipeline.
+
+Supports **multiple encoders per modality** — e.g. GCN + ChemBERT
+for SMILES simultaneously.
+
+Usage::
+
+    python main.py                          # uses configs/default.yaml
+    python main.py --config configs/my.yaml
+"""
+
 from __future__ import annotations
 
+import argparse
 from pathlib import Path
 
-import matplotlib.pyplot as plt
 import polars as pl
 import torch
-from torch_geometric.loader import DataLoader
+import torch.nn as nn
+import yaml
+from torch.utils.data import DataLoader
 
 from data.loader import load_bindingdb_data
 from data.transform import (
-    create_pyg_dataset,
+    add_activity_label,
     remove_cx_notation,
+    remove_duplicates,
     remove_nulls,
     train_test_val_split,
     tranform_ki_to_log_ki,
 )
-from models.gcn import SimpleGCN
+
+
+def load_data(data_cfg: dict) -> pl.DataFrame:
+    """Load dataset — clean Parquet if available, otherwise raw TSV + cleaning."""
+    clean_path = data_cfg.get("clean_path")
+    if clean_path:
+        path = str(ROOT_DIR / clean_path)
+        print(f"Loading clean data from: {path}")
+        return pl.read_parquet(path)
+
+    # Fallback: raw TSV + full cleaning pipeline
+    raw_path = str(ROOT_DIR / data_cfg["path"])
+    print(f"Loading raw data from: {raw_path}  (consider running prepare_data.py first)")
+    df = load_bindingdb_data(raw_path)
+    df = remove_cx_notation(df)
+    df = remove_nulls(df)
+    df = remove_duplicates(df)
+    df = tranform_ki_to_log_ki(df)
+    df = add_activity_label(df, pki_threshold=data_cfg.get("pki_threshold", 7.0))
+    return df
+from datasets.dti_dataset import DTIDataset, build_collate_fn
+from encoders.protein.cnn_encoder import ProteinCNNEncoder
+from encoders.protein.esm2_encoder import ESM2Encoder
+from encoders.smiles.chembert_encoder import ChemBERTEncoder
+from encoders.smiles.fingerprint_mlp_encoder import FingerprintMLPEncoder
+from encoders.smiles.gcn_encoder import GCNEncoder
+from fusion.cross_attention_fusion import CrossAttentionFusion
+from fusion.mlp_fusion import MLPFusion
+from models.multimodal import MultimodalDTI
+from processing.base import InputProcessor
+from processing.protein.cnn_tokenizer import CNNTokenizer
+from processing.protein.esm2_processor import ESM2Processor
+from processing.smiles.chembert_processor import ChemBERTProcessor
+from processing.smiles.fingerprint_processor import FingerprintProcessor
+from processing.smiles.graph_processor import GraphProcessor
+from training.metrics import compute_confusion_matrix
+from training.trainer import Trainer
 
 ROOT_DIR = Path(__file__).resolve().parent
-DATA_PATH = ROOT_DIR / "datasets" / "BindingDB_All.tsv"
-NUM_EPOCHS = 100
-BATCH_SIZE = 128
-LEARNING_RATE = 1e-3
-HIDDEN_CHANNELS = 64
 
 
-def analyze_weird_smiles(df: pl.DataFrame, col_name: str = "Ligand SMILES") -> pl.DataFrame:
-    weird_df = df.filter(pl.col(col_name).str.contains(r"\|"))
+# ── Single-encoder factory ───────────────────────────────────────────
 
-    total_records = df.height
-    weird_count = weird_df.height
-    percentage = (weird_count / total_records) * 100 if total_records else 0.0
-    unique_weird = weird_df.select(col_name).unique()
+def _build_one_smiles(enc_cfg: dict) -> tuple[InputProcessor, nn.Module]:
+    """Build a single SMILES (processor, encoder) pair."""
+    enc_type = enc_cfg["type"]
+    params = enc_cfg.get("params", {})
 
-    print("--- Analiza formatu CXSMILES ---")
-    print(f"Suma wszystkich rekordow: {total_records}")
-    print(f"Liczba rekordow z '|...|': {weird_count} ({percentage:.2f}%)")
-    print(f"Liczba unikalnych struktur z tym zapisem: {unique_weird.height}")
-    print("-" * 32)
-
-    if weird_count > 0:
-        print("Przykladowe smilesy z dziwnym zapisem:")
-        for smiles in unique_weird.head(5).to_series():
-            print(f"-> {smiles}")
+    if enc_type == "gcn":
+        processor = GraphProcessor()
+        encoder = GCNEncoder(
+            hidden_dim=params.get("hidden_dim", 256),
+            num_layers=params.get("num_layers", 3),
+        )
+    elif enc_type == "fingerprint_mlp":
+        fp_type = params.get("fp_type", "ecfp")
+        fp_params = params.get("fp_params", {})
+        processor = FingerprintProcessor(fp_type=fp_type, fp_params=fp_params)
+        input_dim = processor.fingerprint_dim
+        encoder = FingerprintMLPEncoder(
+            input_dim=input_dim,
+            hidden_dim=params.get("hidden_dim", 512),
+            out_dim=params.get("out_dim", 256),
+            dropout=params.get("dropout", 0.2),
+        )
+    elif enc_type == "chembert":
+        cache_path = params["cache_path"]
+        if not Path(cache_path).is_absolute():
+            cache_path = str(ROOT_DIR / cache_path)
+        processor = ChemBERTProcessor(cache_path=cache_path)
+        encoder = ChemBERTEncoder(
+            input_dim=processor.embedding_dim,
+            out_dim=params.get("out_dim", 256),
+        )
     else:
-        print("Nie znaleziono zadnych rekordow z tym formatem.")
+        raise ValueError(f"Unknown smiles encoder type: {enc_type}")
 
-    return unique_weird
-
-
-def describe_protein_sequence_lengths(df: pl.DataFrame) -> pl.DataFrame:
-    df_with_lengths = df.with_columns(
-        pl.col("Full_Protein_Sequence").str.strip_chars().str.len_chars().alias("sequence_length")
-    )
-
-    print(df_with_lengths["sequence_length"].describe())
-    print(f"Liczba unikalnych dlugosci: {df_with_lengths['sequence_length'].n_unique()}")
-    print(df_with_lengths["sequence_length"].value_counts(sort=True).head(20))
-
-    return df_with_lengths
+    return processor, encoder
 
 
-def plot_smiles_frequency_distribution(df: pl.DataFrame) -> None:
-    smiles_hist = df["Ligand SMILES"].value_counts(sort=True)
-    count_distribution = smiles_hist["count"].alias("c").value_counts().sort("count")
+def _build_one_protein(enc_cfg: dict) -> tuple[InputProcessor, nn.Module]:
+    """Build a single protein (processor, encoder) pair."""
+    enc_type = enc_cfg["type"]
+    params = enc_cfg.get("params", {})
 
-    plt.figure(figsize=(10, 6))
-    plt.scatter(
-        count_distribution["c"],
-        count_distribution["count"],
-        alpha=0.6,
-        color="darkorange",
-        edgecolors="white",
-        s=50,
-    )
-    plt.xscale("log")
-    plt.yscale("log")
-    plt.title("Rozklad 'Frequency-of-Frequency' dla SMILES (Skala Log-Log)", fontsize=14)
-    plt.xlabel("Liczba wystapien (Jak popularny jest lek)", fontsize=12)
-    plt.ylabel("Liczba unikalnych SMILES (Ile jest takich lekow)", fontsize=12)
-    plt.grid(True, which="both", ls="-", alpha=0.2)
-    plt.tight_layout()
-    plt.show()
+    if enc_type == "cnn":
+        max_len = params.get("max_seq_len", 1000)
+        processor = CNNTokenizer(max_len=max_len)
+        encoder = ProteinCNNEncoder(
+            vocab_size=processor.vocab_size,
+            embed_dim=params.get("embed_dim", 256),
+            num_filters=params.get("num_filters", 128),
+            kernel_sizes=params.get("kernel_sizes", [3, 7, 15]),
+        )
+    elif enc_type == "esm2":
+        cache_path = params["cache_path"]
+        if not Path(cache_path).is_absolute():
+            cache_path = str(ROOT_DIR / cache_path)
+        processor = ESM2Processor(cache_path=cache_path)
+        encoder = ESM2Encoder(
+            input_dim=processor.embedding_dim,
+            out_dim=params.get("out_dim", 256),
+        )
+    else:
+        raise ValueError(f"Unknown protein encoder type: {enc_type}")
 
-
-def plot_protein_length_distribution(df: pl.DataFrame) -> None:
-    lengths = df.with_columns(
-        pl.col("Full_Protein_Sequence").str.strip_chars().str.len_chars().alias("sequence_length")
-    )["sequence_length"].to_list()
-
-    plt.figure(figsize=(10, 5))
-    plt.hist(lengths, bins=60, color="steelblue", edgecolor="white")
-    plt.title("Rozklad dlugosci Full_Protein_Sequence")
-    plt.xlabel("Dlugosc sekwencji (aa)")
-    plt.ylabel("Liczba rekordow")
-    plt.grid(alpha=0.2)
-    plt.tight_layout()
-    plt.show()
+    return processor, encoder
 
 
-def build_graph_dataset(df: pl.DataFrame, smiles_map: dict[str, torch.Tensor], target_col: str = "pKi"):
-    dataset = []
+# ── Multi-encoder factory ────────────────────────────────────────────
 
-    for smiles, target in zip(df["Ligand SMILES"].to_list(), df[target_col].to_list()):
-        graph = smiles_map[smiles].clone()
-        graph.y = torch.tensor([float(target)], dtype=torch.float)
-        dataset.append(graph)
+def build_smiles_components(cfg: dict):
+    """Build all SMILES (processor, encoder) pairs from config.
 
-    return dataset
+    Returns:
+        (list[InputProcessor], list[Encoder])
+    """
+    specs = cfg["smiles_encoders"]
+    # Support legacy single-encoder format
+    if isinstance(specs, dict):
+        specs = [specs]
 
-
-def train(model, loader, optimizer, criterion, device) -> float:
-    model.train()
-    total_loss = 0.0
-
-    for batch in loader:
-        batch = batch.to(device)
-        optimizer.zero_grad()
-
-        predictions = model(batch).view(-1)
-        loss = criterion(predictions, batch.y.view(-1))
-
-        loss.backward()
-        optimizer.step()
-
-        total_loss += loss.item() * batch.num_graphs
-
-    return total_loss / len(loader.dataset)
+    processors, encoders = [], []
+    for spec in specs:
+        proc, enc = _build_one_smiles(spec)
+        processors.append(proc)
+        encoders.append(enc)
+    return processors, encoders
 
 
-@torch.no_grad()
-def evaluate(model, loader, criterion, device) -> float:
-    model.eval()
-    total_loss = 0.0
+def build_protein_components(cfg: dict):
+    """Build all protein (processor, encoder) pairs from config.
 
-    for batch in loader:
-        batch = batch.to(device)
-        predictions = model(batch).view(-1)
-        loss = criterion(predictions, batch.y.view(-1))
-        total_loss += loss.item() * batch.num_graphs
+    Returns:
+        (list[InputProcessor], list[Encoder])
+    """
+    specs = cfg["protein_encoders"]
+    if isinstance(specs, dict):
+        specs = [specs]
 
-    return total_loss / len(loader.dataset)
+    processors, encoders = [], []
+    for spec in specs:
+        proc, enc = _build_one_protein(spec)
+        processors.append(proc)
+        encoders.append(enc)
+    return processors, encoders
 
+
+def build_fusion(cfg: dict, smiles_dim: int, protein_dim: int):
+    """Build fusion module from config."""
+    fus_type = cfg["fusion"]["type"]
+    params = cfg["fusion"].get("params", {})
+
+    if fus_type == "mlp":
+        return MLPFusion(
+            smiles_dim=smiles_dim,
+            protein_dim=protein_dim,
+            hidden_dims=params.get("hidden_dims", [256, 64]),
+            dropout=params.get("dropout", 0.3),
+        )
+    elif fus_type == "cross_attention":
+        return CrossAttentionFusion(
+            smiles_dim=smiles_dim,
+            protein_dim=protein_dim,
+            proj_dim=params.get("proj_dim", 256),
+            num_heads=params.get("num_heads", 4),
+            hidden_dim=params.get("hidden_dim", 128),
+            dropout=params.get("dropout", 0.3),
+        )
+    else:
+        raise ValueError(f"Unknown fusion type: {fus_type}")
+
+
+# ── Main ─────────────────────────────────────────────────────────────
 
 def main() -> None:
-    pl.Config.set_fmt_str_lengths(1000)
+    parser = argparse.ArgumentParser(description="Multimodal DTI training")
+    parser.add_argument(
+        "--config",
+        type=str,
+        default=str(ROOT_DIR / "configs" / "default.yaml"),
+        help="Path to YAML config file",
+    )
+    parser.add_argument(
+        "--model_name",
+        type=str,
+        default=None,
+        help="Filename for the saved checkpoint (e.g. gcn_cnn.pt). Defaults to config name.",
+    )
+    args = parser.parse_args()
 
-    df = load_bindingdb_data(str(DATA_PATH))
-    print(df.head())
+    if args.model_name is None:
+        args.model_name = Path(args.config).stem + ".pt"
 
-    analyze_weird_smiles(df)
+    # ── Load config ──────────────────────────────────────────────
+    with open(args.config) as f:
+        cfg = yaml.safe_load(f)
 
-    df = remove_cx_notation(df)
-    analyze_weird_smiles(df)
+    data_cfg = cfg["data"]
+    train_cfg = cfg["training"]
 
-    describe_protein_sequence_lengths(df)
+    # ── Device ───────────────────────────────────────────────────
+    dev_str = train_cfg.get("device", "auto")
+    if dev_str == "auto":
+        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    else:
+        device = torch.device(dev_str)
+    print(f"Using device: {device}")
 
-    df = remove_nulls(df)
-    df = tranform_ki_to_log_ki(df)
-    print(df["pKi"].describe())
+    # ── 1. Load data ─────────────────────────────────────────────
+    df = load_data(data_cfg)
+    print(f"Dataset size: {df.height}")
 
-    plot_smiles_frequency_distribution(df)
-    plot_protein_length_distribution(df)
+    # ── 2. Train / val / test split ──────────────────────────────
+    ratios = data_cfg.get("split_ratios", [0.7, 0.1, 0.2])
+    train_df, val_df, test_df = train_test_val_split(df, proportions=ratios)
+    print(f"Train: {train_df.height}  Val: {val_df.height}  Test: {test_df.height}")
 
-    train_df, val_df, test_df = train_test_val_split(df)
-    print(train_df.shape)
-    print(val_df.shape)
-    print(test_df.shape)
+    # ── 3. Build processors and encoders ─────────────────────────
+    smiles_processors, smiles_encoders = build_smiles_components(cfg)
+    protein_processors, protein_encoders = build_protein_components(cfg)
 
-    all_unique_smiles = df["Ligand SMILES"].unique().to_list()
-    all_graphs = create_pyg_dataset(all_unique_smiles, with_features=False)
-    smiles_map = dict(zip(all_unique_smiles, all_graphs))
+    print(f"SMILES encoders:  {[type(e).__name__ for e in smiles_encoders]}")
+    print(f"Protein encoders: {[type(e).__name__ for e in protein_encoders]}")
 
-    valid_smiles = set(smiles_map.keys())
-    print(f"Liczba poprawnych grafow w slowniku: {len(valid_smiles)}")
+    # ── 4. Pre-compute caches (if needed) ────────────────────────
+    for proc in smiles_processors:
+        if isinstance(proc, GraphProcessor):
+            all_smiles = df["Ligand SMILES"].unique().to_list()
+            proc.build_cache(all_smiles)
+            valid = proc.valid_smiles
+            print(f"Valid SMILES graphs: {len(valid)}")
+            train_df = train_df.filter(pl.col("Ligand SMILES").is_in(valid))
+            val_df = val_df.filter(pl.col("Ligand SMILES").is_in(valid))
+            test_df = test_df.filter(pl.col("Ligand SMILES").is_in(valid))
 
-    train_df = train_df.filter(pl.col("Ligand SMILES").is_in(valid_smiles))
-    val_df = val_df.filter(pl.col("Ligand SMILES").is_in(valid_smiles))
-    test_df = test_df.filter(pl.col("Ligand SMILES").is_in(valid_smiles))
-
-    print(f"Rekordy w treningu po synchronizacji: {train_df.height}")
-    print(f"Rekordy w walidacji po synchronizacji: {val_df.height}")
-    print(f"Rekordy w teście po synchronizacji: {test_df.height}")
-
-    train_dataset = build_graph_dataset(train_df, smiles_map)
-    val_dataset = build_graph_dataset(val_df, smiles_map)
-    test_dataset = build_graph_dataset(test_df, smiles_map)
-
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    print(device)
-
-    train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True, num_workers=0)
-    val_loader = DataLoader(val_dataset, batch_size=BATCH_SIZE, shuffle=False, num_workers=0)
-    test_loader = DataLoader(test_dataset, batch_size=BATCH_SIZE, shuffle=False, num_workers=0)
-
-    model = SimpleGCN(hidden_channels=HIDDEN_CHANNELS).to(device)
-    optimizer = torch.optim.Adam(model.parameters(), lr=LEARNING_RATE)
-    criterion = torch.nn.MSELoss()
-
-    for epoch in range(1, NUM_EPOCHS + 1):
-        train_loss = train(model, train_loader, optimizer, criterion, device)
-        val_loss = evaluate(model, val_loader, criterion, device)
-        test_loss = evaluate(model, test_loader, criterion, device)
-
-        print(
-            f"Epoka: {epoch:03d}, "
-            f"Train loss: {train_loss:.4f}, "
-            f"Val loss: {val_loss:.4f}, "
-            f"Test loss: {test_loss:.4f}"
+    # ── 5. Build datasets and data loaders ───────────────────────
+    def _make_dataset(split_df: pl.DataFrame) -> DTIDataset:
+        return DTIDataset(
+            smiles_list=split_df["Ligand SMILES"].to_list(),
+            sequence_list=split_df["Full_Protein_Sequence"].to_list(),
+            labels=split_df["is_active"].cast(pl.Float64).to_list(),
+            smiles_processors=smiles_processors,
+            protein_processors=protein_processors,
         )
+
+    train_ds = _make_dataset(train_df)
+    val_ds = _make_dataset(val_df)
+    test_ds = _make_dataset(test_df)
+
+    collate_fn = build_collate_fn(smiles_processors, protein_processors)
+    batch_size = train_cfg.get("batch_size", 256)
+    n_workers = train_cfg.get("num_workers", 4)
+    # Zabezpieczenie: Dataloader z num_workers>0 potrafi wejść w zakleszczenie, 
+    # gdy jest sztucznie przypinany przez taskset. Wyłączamy multiprocessing dla bezpieczeństwa.
+    import os
+    if "OMP_NUM_THREADS" in os.environ:
+        n_workers = 0
+
+    train_loader = DataLoader(
+        train_ds, batch_size=batch_size, shuffle=True,
+        collate_fn=collate_fn, num_workers=n_workers,
+        pin_memory=True, persistent_workers=(n_workers > 0),
+    )
+    val_loader = DataLoader(
+        val_ds, batch_size=batch_size, shuffle=False,
+        collate_fn=collate_fn, num_workers=n_workers,
+        pin_memory=True, persistent_workers=(n_workers > 0),
+    )
+    test_loader = DataLoader(
+        test_ds, batch_size=batch_size, shuffle=False,
+        collate_fn=collate_fn, num_workers=n_workers,
+        pin_memory=True, persistent_workers=(n_workers > 0),
+    )
+
+    # ── 6. Build model ───────────────────────────────────────────
+    total_smiles_dim = sum(e.output_dim for e in smiles_encoders)
+    total_protein_dim = sum(e.output_dim for e in protein_encoders)
+    fusion = build_fusion(cfg, total_smiles_dim, total_protein_dim)
+    model = MultimodalDTI(smiles_encoders, protein_encoders, fusion)
+    print(model)
+
+    # ── 7. Train ─────────────────────────────────────────────────
+    optimizer = torch.optim.Adam(
+        model.parameters(),
+        lr=train_cfg.get("learning_rate", 1e-4),
+        weight_decay=train_cfg.get("weight_decay", 1e-5),
+    )
+    criterion = nn.BCEWithLogitsLoss()
+
+    trainer = Trainer(
+        model=model,
+        optimizer=optimizer,
+        criterion=criterion,
+        device=device,
+        checkpoint_filename=args.model_name,
+        patience=train_cfg.get("patience", 8),
+    )
+    model = trainer.fit(train_loader, val_loader, epochs=train_cfg.get("epochs", 50))
+
+    # ── 8. Final evaluation ──────────────────────────────────────
+    test_metrics = trainer.eval_epoch(test_loader)
+    print("\n═══ Test Results ═══")
+    for k, v in test_metrics.items():
+        print(f"  {k:>12s}: {v:.4f}")
 
 
 if __name__ == "__main__":

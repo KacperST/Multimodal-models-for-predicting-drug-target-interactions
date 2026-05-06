@@ -12,3 +12,4 @@ wheels/
 # Datasets
 src/datasets/*.csv
 src/datasets/*.tsv
+src/datasets/*.pt

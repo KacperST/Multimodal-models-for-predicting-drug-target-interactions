@@ -15,6 +15,10 @@ dependencies = [
     "torch>=2.11.0",
     "torch-geometric>=2.7.0",
     "tqdm>=4.67.3",
+    "pyyaml>=6.0",
+    "scikit-learn>=1.5.0",
+    "transformers>=5.7.0",
+    "scikit-fingerprints>=1.0.0",
 ]
 
 [build-system]
