@@ -61,8 +61,10 @@ class Trainer:
             y = y.to(self.device)
 
             self.optimizer.zero_grad()
-            logits = self.model(smiles_batch, protein_batch).squeeze(1)
-            loss = self.criterion(logits, y)
+            with torch.autocast(device_type=self.device.type, dtype=torch.bfloat16):
+                logits = self.model(smiles_batch, protein_batch).squeeze(1)
+                loss = self.criterion(logits, y)
+            
             loss.backward()
             nn.utils.clip_grad_norm_(
                 (p for p in self.model.parameters() if p.requires_grad), 1.0
@@ -87,8 +89,10 @@ class Trainer:
             protein_batch = _to_device(protein_batch, self.device)
             y = y.to(self.device)
 
-            logits = self.model(smiles_batch, protein_batch).squeeze(1)
-            total_loss += self.criterion(logits, y).item()
+            with torch.autocast(device_type=self.device.type, dtype=torch.bfloat16):
+                logits = self.model(smiles_batch, protein_batch).squeeze(1)
+                loss_val = self.criterion(logits, y).item()
+            total_loss += loss_val
 
             all_probs.extend(torch.sigmoid(logits).cpu().numpy().tolist())
             all_labels.extend(y.cpu().numpy().tolist())

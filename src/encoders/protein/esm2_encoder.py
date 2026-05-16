@@ -50,10 +50,10 @@ class ESM2Encoder(Encoder):
             add_pooling_layer=False,
         )
 
-        # ── Enable gradient checkpointing ────────────────────────
-        base_model.gradient_checkpointing_enable(
-            gradient_checkpointing_kwargs={"use_reentrant": False}
-        )
+        # ── Gradient checkpointing disabled for speed ─────────────
+        # base_model.gradient_checkpointing_enable(
+        #     gradient_checkpointing_kwargs={"use_reentrant": False}
+        # )
 
         # ── Attach LoRA adapters ─────────────────────────────────
         lora_config = LoraConfig(
