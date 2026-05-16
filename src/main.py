@@ -99,13 +99,17 @@ def _build_one_smiles(enc_cfg: dict) -> tuple[InputProcessor, nn.Module]:
             dropout=params.get("dropout", 0.2),
         )
     elif enc_type == "chembert":
-        cache_path = params["cache_path"]
-        if not Path(cache_path).is_absolute():
-            cache_path = str(ROOT_DIR / cache_path)
-        processor = ChemBERTProcessor(cache_path=cache_path)
+        model_name = params.get("model_name", "seyonec/ChemBERTa-zinc-base-v1")
+        processor = ChemBERTProcessor(
+            model_name=model_name,
+            max_length=params.get("max_length", 256),
+        )
         encoder = ChemBERTEncoder(
-            input_dim=processor.embedding_dim,
+            model_name=model_name,
             out_dim=params.get("out_dim", 256),
+            lora_r=params.get("lora_r", 16),
+            lora_alpha=params.get("lora_alpha", 32),
+            lora_dropout=params.get("lora_dropout", 0.05),
         )
     else:
         raise ValueError(f"Unknown smiles encoder type: {enc_type}")
@@ -128,13 +132,17 @@ def _build_one_protein(enc_cfg: dict) -> tuple[InputProcessor, nn.Module]:
             kernel_sizes=params.get("kernel_sizes", [3, 7, 15]),
         )
     elif enc_type == "esm2":
-        cache_path = params["cache_path"]
-        if not Path(cache_path).is_absolute():
-            cache_path = str(ROOT_DIR / cache_path)
-        processor = ESM2Processor(cache_path=cache_path)
+        model_name = params.get("model_name", "facebook/esm2_t33_650M_UR50D")
+        processor = ESM2Processor(
+            model_name=model_name,
+            max_length=params.get("max_length", 1024),
+        )
         encoder = ESM2Encoder(
-            input_dim=processor.embedding_dim,
+            model_name=model_name,
             out_dim=params.get("out_dim", 256),
+            lora_r=params.get("lora_r", 16),
+            lora_alpha=params.get("lora_alpha", 32),
+            lora_dropout=params.get("lora_dropout", 0.05),
         )
     else:
         raise ValueError(f"Unknown protein encoder type: {enc_type}")
@@ -316,8 +324,10 @@ def main() -> None:
     print(model)
 
     # ── 7. Train ─────────────────────────────────────────────────
-    optimizer = torch.optim.Adam(
-        model.parameters(),
+    trainable_params = [p for p in model.parameters() if p.requires_grad]
+    print(f"Trainable parameters: {sum(p.numel() for p in trainable_params):,}")
+    optimizer = torch.optim.AdamW(
+        trainable_params,
         lr=train_cfg.get("learning_rate", 1e-4),
         weight_decay=train_cfg.get("weight_decay", 1e-5),
     )

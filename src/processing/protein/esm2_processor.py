@@ -1,53 +1,75 @@
 from __future__ import annotations
 
 import torch
+from transformers import AutoTokenizer
 
 from processing.base import InputProcessor
 
 
 class ESM2Processor(InputProcessor):
-    """Processor that looks up pre-computed ESM-2 embeddings.
+    """Processor that tokenizes protein sequences for ESM-2 fine-tuning.
 
-    Instead of tokenizing sequences at runtime, this processor loads
-    a ``{sequence → tensor}`` mapping from a ``.pt`` file produced by
-    ``precompute_esm2.py`` and simply returns the cached embedding.
+    Uses the HuggingFace tokenizer to produce ``input_ids`` and
+    ``attention_mask`` tensors.  Collation pads sequences to the
+    longest in the batch.
 
     Args:
-        cache_path: Path to the ``.pt`` file with pre-computed embeddings.
+        model_name: HuggingFace model identifier for the tokenizer.
+        max_length: Maximum number of tokens per protein sequence.
     """
 
-    def __init__(self, cache_path: str) -> None:
-        self.cache: dict[str, torch.Tensor] = torch.load(
-            cache_path, map_location="cpu", weights_only=True
-        )
-        sample = next(iter(self.cache.values()))
-        self.embedding_dim = sample.shape[0]
+    def __init__(
+        self,
+        model_name: str = "facebook/esm2_t33_650M_UR50D",
+        max_length: int = 1024,
+    ) -> None:
+        self.tokenizer = AutoTokenizer.from_pretrained(model_name)
+        self.max_length = max_length
         print(
-            f"ESM2Processor: loaded {len(self.cache)} embeddings "
-            f"(dim={self.embedding_dim}) from {cache_path}"
+            f"ESM2Processor: tokenizer loaded for {model_name} "
+            f"(max_length={max_length})"
         )
 
-    def process(self, raw_input: str) -> torch.Tensor:
-        """Look up the pre-computed embedding for a protein sequence.
+    def process(self, raw_input: str) -> dict[str, torch.Tensor]:
+        """Tokenize a single protein sequence.
 
         Returns:
-            Tensor of shape ``(H,)`` — the cached ESM-2 embedding.
-
-        Raises:
-            KeyError: If the sequence was not pre-computed.
+            Dict with ``input_ids`` and ``attention_mask``, each of
+            shape ``(L,)`` where *L* is the tokenized length (no padding).
         """
-        try:
-            return self.cache[raw_input]
-        except KeyError:
-            raise KeyError(
-                f"Sequence not found in ESM-2 cache (len={len(raw_input)}). "
-                f"Re-run precompute_esm2.py to include all sequences."
-            )
+        encoded = self.tokenizer(
+            raw_input,
+            truncation=True,
+            max_length=self.max_length,
+            padding=False,
+            add_special_tokens=True,
+            return_tensors="pt",
+        )
+        # squeeze batch dim → (L,)
+        return {k: v.squeeze(0) for k, v in encoded.items()}
 
-    def collate(self, batch: list[torch.Tensor]) -> torch.Tensor:
-        """Stack cached embeddings into a batch.
+    def collate(
+        self, batch: list[dict[str, torch.Tensor]]
+    ) -> dict[str, torch.Tensor]:
+        """Pad and stack tokenized sequences into a batch.
 
         Returns:
-            Tensor of shape ``(B, H)``.
+            Dict with ``input_ids`` and ``attention_mask``, each of
+            shape ``(B, L_max)``.
         """
-        return torch.stack(batch, dim=0)
+        input_ids = [item["input_ids"] for item in batch]
+        attention_mask = [item["attention_mask"] for item in batch]
+
+        input_ids_padded = torch.nn.utils.rnn.pad_sequence(
+            input_ids,
+            batch_first=True,
+            padding_value=self.tokenizer.pad_token_id,
+        )
+        attention_mask_padded = torch.nn.utils.rnn.pad_sequence(
+            attention_mask, batch_first=True, padding_value=0
+        )
+
+        return {
+            "input_ids": input_ids_padded,
+            "attention_mask": attention_mask_padded,
+        }

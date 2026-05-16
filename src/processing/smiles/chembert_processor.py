@@ -1,52 +1,75 @@
 from __future__ import annotations
 
 import torch
+from transformers import AutoTokenizer
+
 from processing.base import InputProcessor
 
 
 class ChemBERTProcessor(InputProcessor):
-    """Processor that looks up pre-computed ChemBERT embeddings.
+    """Processor that tokenizes SMILES strings for ChemBERT fine-tuning.
 
-    Instead of tokenizing SMILES strings at runtime, this processor loads
-    a ``{smiles → tensor}`` mapping from a ``.pt`` file produced by
-    ``precompute_chembert.py`` and simply returns the cached embedding.
+    Uses the HuggingFace tokenizer to produce ``input_ids`` and
+    ``attention_mask`` tensors.  Collation pads sequences to the
+    longest in the batch.
 
     Args:
-        cache_path: Path to the ``.pt`` file with pre-computed embeddings.
+        model_name: HuggingFace model identifier for the tokenizer.
+        max_length: Maximum number of tokens per SMILES string.
     """
 
-    def __init__(self, cache_path: str) -> None:
-        self.cache: dict[str, torch.Tensor] = torch.load(
-            cache_path, map_location="cpu", weights_only=True
-        )
-        sample = next(iter(self.cache.values()))
-        self.embedding_dim = sample.shape[0]
+    def __init__(
+        self,
+        model_name: str = "seyonec/ChemBERTa-zinc-base-v1",
+        max_length: int = 256,
+    ) -> None:
+        self.tokenizer = AutoTokenizer.from_pretrained(model_name)
+        self.max_length = max_length
         print(
-            f"ChemBERTProcessor: loaded {len(self.cache)} embeddings "
-            f"(dim={self.embedding_dim}) from {cache_path}"
+            f"ChemBERTProcessor: tokenizer loaded for {model_name} "
+            f"(max_length={max_length})"
         )
 
-    def process(self, raw_input: str) -> torch.Tensor:
-        """Look up the pre-computed embedding for a SMILES string.
+    def process(self, raw_input: str) -> dict[str, torch.Tensor]:
+        """Tokenize a single SMILES string.
 
         Returns:
-            Tensor of shape ``(H,)`` — the cached ChemBERT embedding.
-
-        Raises:
-            KeyError: If the SMILES string was not pre-computed.
+            Dict with ``input_ids`` and ``attention_mask``, each of
+            shape ``(L,)`` where *L* is the tokenized length (no padding).
         """
-        try:
-            return self.cache[raw_input]
-        except KeyError:
-            raise KeyError(
-                f"SMILES not found in ChemBERT cache (len={len(raw_input)}). "
-                f"Re-run precompute_chembert.py to include all SMILES strings."
-            )
+        encoded = self.tokenizer(
+            raw_input,
+            truncation=True,
+            max_length=self.max_length,
+            padding=False,
+            add_special_tokens=True,
+            return_tensors="pt",
+        )
+        # squeeze batch dim → (L,)
+        return {k: v.squeeze(0) for k, v in encoded.items()}
 
-    def collate(self, batch: list[torch.Tensor]) -> torch.Tensor:
-        """Stack cached embeddings into a batch.
+    def collate(
+        self, batch: list[dict[str, torch.Tensor]]
+    ) -> dict[str, torch.Tensor]:
+        """Pad and stack tokenized SMILES into a batch.
 
         Returns:
-            Tensor of shape ``(B, H)``.
+            Dict with ``input_ids`` and ``attention_mask``, each of
+            shape ``(B, L_max)``.
         """
-        return torch.stack(batch, dim=0)
+        input_ids = [item["input_ids"] for item in batch]
+        attention_mask = [item["attention_mask"] for item in batch]
+
+        input_ids_padded = torch.nn.utils.rnn.pad_sequence(
+            input_ids,
+            batch_first=True,
+            padding_value=self.tokenizer.pad_token_id,
+        )
+        attention_mask_padded = torch.nn.utils.rnn.pad_sequence(
+            attention_mask, batch_first=True, padding_value=0
+        )
+
+        return {
+            "input_ids": input_ids_padded,
+            "attention_mask": attention_mask_padded,
+        }

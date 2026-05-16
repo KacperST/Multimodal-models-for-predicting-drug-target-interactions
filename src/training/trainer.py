@@ -64,7 +64,9 @@ class Trainer:
             logits = self.model(smiles_batch, protein_batch).squeeze(1)
             loss = self.criterion(logits, y)
             loss.backward()
-            nn.utils.clip_grad_norm_(self.model.parameters(), 1.0)
+            nn.utils.clip_grad_norm_(
+                (p for p in self.model.parameters() if p.requires_grad), 1.0
+            )
             self.optimizer.step()
 
             total_loss += loss.item()
@@ -138,7 +140,15 @@ class Trainer:
                 best_val_loss = val_loss
                 best_epoch = epoch
                 ckpt_path = self.checkpoint_dir / self.checkpoint_filename
-                torch.save(self.model.state_dict(), ckpt_path)
+                trainable_keys = {
+                    n for n, p in self.model.named_parameters()
+                    if p.requires_grad
+                }
+                state = {
+                    k: v for k, v in self.model.state_dict().items()
+                    if k in trainable_keys
+                }
+                torch.save(state, ckpt_path)
                 print(
                     f"  ✓ New best model (epoch {epoch}, val_loss={val_loss:.4f}, val_auc={val_auc:.4f}) saved to {ckpt_path}",
                     flush=True
@@ -154,7 +164,9 @@ class Trainer:
 
         # Load best checkpoint
         best_ckpt = self.checkpoint_dir / self.checkpoint_filename
-        self.model.load_state_dict(torch.load(best_ckpt, weights_only=True))
+        self.model.load_state_dict(
+            torch.load(best_ckpt, weights_only=True), strict=False
+        )
         return self.model
 
 
