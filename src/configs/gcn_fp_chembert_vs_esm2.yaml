@@ -50,5 +50,5 @@ training:
   weight_decay: 1.0e-05
   epochs: 100
   patience: 8
-  num_workers: 0
+  num_workers: 4
   device: auto

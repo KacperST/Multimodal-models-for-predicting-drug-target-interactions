@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import torch
 from transformers import AutoTokenizer
+from functools import lru_cache
 
 from processing.base import InputProcessor
 
@@ -30,6 +31,7 @@ class ESM2Processor(InputProcessor):
             f"(max_length={max_length})"
         )
 
+    @lru_cache(maxsize=200000)
     def process(self, raw_input: str) -> dict[str, torch.Tensor]:
         """Tokenize a single protein sequence.
 

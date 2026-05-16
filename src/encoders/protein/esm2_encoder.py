@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import torch
 import torch.nn as nn
-from transformers import AutoModel, BitsAndBytesConfig
-from peft import LoraConfig, TaskType, get_peft_model, prepare_model_for_kbit_training
+from transformers import AutoModel
+from peft import LoraConfig, TaskType, get_peft_model
 
 from encoders.base import Encoder
 
@@ -41,25 +41,18 @@ class ESM2Encoder(Encoder):
         if lora_target_modules is None:
             lora_target_modules = ["query", "value"]
 
-        # ── Load base model in 4-bit ─────────────────────────────
-        bnb_config = BitsAndBytesConfig(
-            load_in_4bit=True,
-            bnb_4bit_quant_type="nf4",
-            bnb_4bit_compute_dtype=torch.bfloat16,
-            bnb_4bit_use_double_quant=True,
-        )
-
+        # ── Load base model in bfloat16 with SDPA ────────────────
         base_model = AutoModel.from_pretrained(
             model_name,
-            quantization_config=bnb_config,
             torch_dtype=torch.bfloat16,
+            attn_implementation="sdpa",
             device_map={"": device},
+            add_pooling_layer=False,
         )
 
-        # ── Prepare for k-bit training ───────────────────────────
-        base_model = prepare_model_for_kbit_training(
-            base_model,
-            use_gradient_checkpointing={"use_reentrant": False},
+        # ── Enable gradient checkpointing ────────────────────────
+        base_model.gradient_checkpointing_enable(
+            gradient_checkpointing_kwargs={"use_reentrant": False}
         )
 
         # ── Attach LoRA adapters ─────────────────────────────────

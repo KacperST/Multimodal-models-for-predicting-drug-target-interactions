@@ -25,7 +25,7 @@ base_config = {
         "weight_decay": 0.00001,
         "epochs": 100,
         "patience": 8,
-        "num_workers": 0,
+        "num_workers": 4,
         "device": "auto"
     }
 }
