@@ -23,6 +23,7 @@ class ESM2Encoder(Encoder):
         lora_alpha: LoRA alpha scaling factor.
         lora_dropout: Dropout applied to LoRA layers.
         lora_target_modules: Names of modules to attach LoRA to.
+        device: Target device for model placement (e.g. ``"cuda:0"``).
     """
 
     def __init__(
@@ -33,6 +34,7 @@ class ESM2Encoder(Encoder):
         lora_alpha: int = 32,
         lora_dropout: float = 0.05,
         lora_target_modules: list[str] | None = None,
+        device: str = "cuda:0",
     ) -> None:
         super().__init__()
 
@@ -51,12 +53,13 @@ class ESM2Encoder(Encoder):
             model_name,
             quantization_config=bnb_config,
             torch_dtype=torch.bfloat16,
-            device_map="auto",
+            device_map={"": device},
         )
 
         # ── Prepare for k-bit training ───────────────────────────
         base_model = prepare_model_for_kbit_training(
-            base_model, use_gradient_checkpointing=True
+            base_model,
+            use_gradient_checkpointing={"use_reentrant": False},
         )
 
         # ── Attach LoRA adapters ─────────────────────────────────

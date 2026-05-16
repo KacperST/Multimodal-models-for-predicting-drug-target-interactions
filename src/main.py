@@ -76,7 +76,7 @@ ROOT_DIR = Path(__file__).resolve().parent
 
 # ── Single-encoder factory ───────────────────────────────────────────
 
-def _build_one_smiles(enc_cfg: dict) -> tuple[InputProcessor, nn.Module]:
+def _build_one_smiles(enc_cfg: dict, device: str = "cuda:0") -> tuple[InputProcessor, nn.Module]:
     """Build a single SMILES (processor, encoder) pair."""
     enc_type = enc_cfg["type"]
     params = enc_cfg.get("params", {})
@@ -110,6 +110,7 @@ def _build_one_smiles(enc_cfg: dict) -> tuple[InputProcessor, nn.Module]:
             lora_r=params.get("lora_r", 16),
             lora_alpha=params.get("lora_alpha", 32),
             lora_dropout=params.get("lora_dropout", 0.05),
+            device=device,
         )
     else:
         raise ValueError(f"Unknown smiles encoder type: {enc_type}")
@@ -117,7 +118,7 @@ def _build_one_smiles(enc_cfg: dict) -> tuple[InputProcessor, nn.Module]:
     return processor, encoder
 
 
-def _build_one_protein(enc_cfg: dict) -> tuple[InputProcessor, nn.Module]:
+def _build_one_protein(enc_cfg: dict, device: str = "cuda:0") -> tuple[InputProcessor, nn.Module]:
     """Build a single protein (processor, encoder) pair."""
     enc_type = enc_cfg["type"]
     params = enc_cfg.get("params", {})
@@ -143,6 +144,7 @@ def _build_one_protein(enc_cfg: dict) -> tuple[InputProcessor, nn.Module]:
             lora_r=params.get("lora_r", 16),
             lora_alpha=params.get("lora_alpha", 32),
             lora_dropout=params.get("lora_dropout", 0.05),
+            device=device,
         )
     else:
         raise ValueError(f"Unknown protein encoder type: {enc_type}")
@@ -152,7 +154,7 @@ def _build_one_protein(enc_cfg: dict) -> tuple[InputProcessor, nn.Module]:
 
 # ── Multi-encoder factory ────────────────────────────────────────────
 
-def build_smiles_components(cfg: dict):
+def build_smiles_components(cfg: dict, device: str = "cuda:0"):
     """Build all SMILES (processor, encoder) pairs from config.
 
     Returns:
@@ -165,13 +167,13 @@ def build_smiles_components(cfg: dict):
 
     processors, encoders = [], []
     for spec in specs:
-        proc, enc = _build_one_smiles(spec)
+        proc, enc = _build_one_smiles(spec, device=device)
         processors.append(proc)
         encoders.append(enc)
     return processors, encoders
 
 
-def build_protein_components(cfg: dict):
+def build_protein_components(cfg: dict, device: str = "cuda:0"):
     """Build all protein (processor, encoder) pairs from config.
 
     Returns:
@@ -183,7 +185,7 @@ def build_protein_components(cfg: dict):
 
     processors, encoders = [], []
     for spec in specs:
-        proc, enc = _build_one_protein(spec)
+        proc, enc = _build_one_protein(spec, device=device)
         processors.append(proc)
         encoders.append(enc)
     return processors, encoders
@@ -260,8 +262,9 @@ def main() -> None:
     print(f"Train: {train_df.height}  Val: {val_df.height}  Test: {test_df.height}")
 
     # ── 3. Build processors and encoders ─────────────────────────
-    smiles_processors, smiles_encoders = build_smiles_components(cfg)
-    protein_processors, protein_encoders = build_protein_components(cfg)
+    dev_str_resolved = str(device)
+    smiles_processors, smiles_encoders = build_smiles_components(cfg, device=dev_str_resolved)
+    protein_processors, protein_encoders = build_protein_components(cfg, device=dev_str_resolved)
 
     print(f"SMILES encoders:  {[type(e).__name__ for e in smiles_encoders]}")
     print(f"Protein encoders: {[type(e).__name__ for e in protein_encoders]}")
