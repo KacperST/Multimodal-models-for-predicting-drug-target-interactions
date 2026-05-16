@@ -21,8 +21,8 @@ base_config = {
     },
     "training": {
         "batch_size": 32,
-        "learning_rate": 0.0001,
-        "weight_decay": 0.00001,
+        "learning_rate": 0.00005,
+        "weight_decay": 0.01,
         "epochs": 100,
         "patience": 8,
         "num_workers": 4,
@@ -33,12 +33,12 @@ base_config = {
 smiles_options = {
     "gcn": {"type": "gcn", "params": {"hidden_dim": 256, "num_layers": 3}},
     "fp": {"type": "fingerprint_mlp", "params": {"fp_type": "ecfp", "fp_params": {"radius": 2, "fp_size": 1024}, "hidden_dim": 512, "out_dim": 256, "dropout": 0.2}},
-    "chembert": {"type": "chembert", "params": {"model_name": "seyonec/ChemBERTa-zinc-base-v1", "max_length": 256, "out_dim": 256, "lora_r": 16, "lora_alpha": 32, "lora_dropout": 0.05}}
+    "chembert": {"type": "chembert", "params": {"model_name": "seyonec/ChemBERTa-zinc-base-v1", "max_length": 256, "out_dim": 256, "lora_r": 16, "lora_alpha": 16, "lora_dropout": 0.05}}
 }
 
 protein_options = {
     "cnn": {"type": "cnn", "params": {"embed_dim": 256, "num_filters": 128, "kernel_sizes": [3, 7, 15], "max_seq_len": 1000}},
-    "esm2": {"type": "esm2", "params": {"model_name": "facebook/esm2_t33_650M_UR50D", "max_length": 1024, "out_dim": 256, "lora_r": 16, "lora_alpha": 32, "lora_dropout": 0.05}}
+    "esm2": {"type": "esm2", "params": {"model_name": "facebook/esm2_t33_650M_UR50D", "max_length": 1024, "out_dim": 256, "lora_r": 16, "lora_alpha": 16, "lora_dropout": 0.05}}
 }
 
 import itertools
