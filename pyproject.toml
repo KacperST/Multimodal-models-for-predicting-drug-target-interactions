@@ -19,6 +19,7 @@ dependencies = [
     "scikit-learn>=1.5.0",
     "transformers>=5.7.0",
     "scikit-fingerprints>=1.0.0",
+    "peft>=0.19.1",
 ]
 
 [build-system]

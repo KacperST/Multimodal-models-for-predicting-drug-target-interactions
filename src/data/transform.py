@@ -1,4 +1,8 @@
 import polars as pl
+
+# Patch error in skfp.model_selection.randomized_scaffold_train_valid_test_split
+import skfp.model_selection.splitters.randomized_scaffold_split as rs_module
+rs_module.check_random_state = lambda x: x
 from skfp.model_selection import randomized_scaffold_train_valid_test_split
 
 
