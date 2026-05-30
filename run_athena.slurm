@@ -17,8 +17,8 @@ mkdir -p slurm_logs
 # 2. Załadowanie odpowiednich modułów środowiskowych na Athenie (Python i ew. CUDA)
 # Te moduły mogą się zmieniać w zależności od aktualnej konfiguracji Atheny,
 # często "module avail python" pozwala sprawdzić dostępne wersje.
-module load Python/3.11.3-GCCcore-12.3.0
-module load CUDA/12.1.1
+module load Python/3.11.5
+module load CUDA/12.4.0
 
 # 3. Przejście do katalogu, z którego uruchomiono komendę sbatch
 cd $SLURM_SUBMIT_DIR

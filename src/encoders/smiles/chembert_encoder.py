@@ -4,6 +4,7 @@ import torch
 import torch.nn as nn
 from transformers import AutoModel
 from peft import LoraConfig, TaskType, get_peft_model
+from transformers import BitsAndBytesConfig
 
 from encoders.base import Encoder
 
@@ -39,8 +40,7 @@ class ChemBERTEncoder(Encoder):
         super().__init__()
 
         if lora_target_modules is None:
-            lora_target_modules = ["query", "value"]
-
+            lora_target_modules=["query", "key", "value", "dense"]
         # ── Load base model in bfloat16 with SDPA ────────────────
         base_model = AutoModel.from_pretrained(
             model_name,

@@ -306,16 +306,19 @@ def main() -> None:
         train_ds, batch_size=batch_size, shuffle=True,
         collate_fn=collate_fn, num_workers=n_workers,
         pin_memory=True, persistent_workers=(n_workers > 0),
+        drop_last=True,
     )
     val_loader = DataLoader(
         val_ds, batch_size=batch_size, shuffle=False,
         collate_fn=collate_fn, num_workers=n_workers,
         pin_memory=True, persistent_workers=(n_workers > 0),
+        drop_last=False,
     )
     test_loader = DataLoader(
         test_ds, batch_size=batch_size, shuffle=False,
         collate_fn=collate_fn, num_workers=n_workers,
         pin_memory=True, persistent_workers=(n_workers > 0),
+        drop_last=False,
     )
 
     # ── 6. Build model ───────────────────────────────────────────
@@ -324,6 +327,7 @@ def main() -> None:
     fusion = build_fusion(cfg, total_smiles_dim, total_protein_dim)
     model = MultimodalDTI(smiles_encoders, protein_encoders, fusion)
     print(model)
+    model = torch.compile(model)    
 
     # ── 7. Train ─────────────────────────────────────────────────
     trainable_params = [p for p in model.parameters() if p.requires_grad]

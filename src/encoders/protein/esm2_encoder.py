@@ -41,17 +41,10 @@ class ESM2Encoder(Encoder):
 
         if lora_target_modules is None:
             lora_target_modules=["query", "key", "value", "dense"]
-        bnb_config = BitsAndBytesConfig(
-            load_in_4bit=True,
-            bnb_4bit_use_double_quant=True,
-            bnb_4bit_quant_type="nf4",
-            bnb_4bit_compute_dtype=torch.bfloat16
-        )
         # ── Load base model in bfloat16 with SDPA ────────────────
         base_model = AutoModel.from_pretrained(
             model_name,
             torch_dtype=torch.bfloat16,
-            quantization_config=bnb_config,
             attn_implementation="sdpa",
             device_map={"": device},
             add_pooling_layer=False,
