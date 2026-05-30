@@ -4,6 +4,7 @@ import torch
 import torch.nn as nn
 from transformers import AutoModel
 from peft import LoraConfig, TaskType, get_peft_model
+from transformers import BitsAndBytesConfig
 
 from encoders.base import Encoder
 
@@ -39,12 +40,18 @@ class ESM2Encoder(Encoder):
         super().__init__()
 
         if lora_target_modules is None:
-            lora_target_modules = ["query", "value"]
-
+            lora_target_modules=["query", "key", "value", "dense"]
+        bnb_config = BitsAndBytesConfig(
+            load_in_4bit=True,
+            bnb_4bit_use_double_quant=True,
+            bnb_4bit_quant_type="nf4",
+            bnb_4bit_compute_dtype=torch.bfloat16
+        )
         # ── Load base model in bfloat16 with SDPA ────────────────
         base_model = AutoModel.from_pretrained(
             model_name,
             torch_dtype=torch.bfloat16,
+            quantization_config=bnb_config,
             attn_implementation="sdpa",
             device_map={"": device},
             add_pooling_layer=False,
@@ -76,7 +83,7 @@ class ESM2Encoder(Encoder):
                 nn.Linear(hidden_size, out_dim),
                 nn.LayerNorm(out_dim),
                 nn.ReLU(),
-            )
+            ).to(device)
             self._output_dim = out_dim
         else:
             self.projection = None
