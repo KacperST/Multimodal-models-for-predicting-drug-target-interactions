@@ -223,6 +223,7 @@ def build_fusion(cfg: dict, smiles_dim: int, protein_dim: int):
 # ── Main ─────────────────────────────────────────────────────────────
 
 def main() -> None:
+    torch.set_float32_matmul_precision('high')
     parser = argparse.ArgumentParser(description="Multimodal DTI training")
     parser.add_argument(
         "--config",

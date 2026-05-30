@@ -94,7 +94,7 @@ class Trainer:
                 loss_val = self.criterion(logits, y).item()
             total_loss += loss_val
 
-            all_probs.extend(torch.sigmoid(logits).cpu().numpy().tolist())
+            all_probs.extend(torch.sigmoid(logits).float().cpu().numpy().tolist())
             all_labels.extend(y.cpu().numpy().tolist())
 
         metrics = compute_classification_metrics(all_labels, all_probs)
