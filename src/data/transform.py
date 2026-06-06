@@ -1,5 +1,9 @@
 import polars as pl
 
+import skfp.model_selection.splitters.randomized_scaffold_split as rs_module
+rs_module.check_random_state = lambda x: x
+from skfp.model_selection import randomized_scaffold_train_valid_test_split
+
 
 def remove_nulls(df: pl.DataFrame) -> pl.DataFrame:
     return df.drop_nulls()
