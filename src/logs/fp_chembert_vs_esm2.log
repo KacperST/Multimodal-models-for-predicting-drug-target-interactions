@@ -1,89 +1,30 @@
-/home/kstankiewicz/DTI/Multimodal-models-for-predicting-drug-target-interactions/.venv/lib/python3.11/site-packages/outdated/__init__.py:36: UserWarning: pkg_resources is deprecated as an API. See https://setuptools.pypa.io/en/latest/pkg_resources.html. The pkg_resources package is slated for removal as early as 2025-11-30. Refrain from using this package or pin to Setuptools<81.
+/home/kappy/Repos/Multimodal-models-for-predicting-drug-target-interactions/.venv/lib/python3.11/site-packages/outdated/__init__.py:36: UserWarning: pkg_resources is deprecated as an API. See https://setuptools.pypa.io/en/latest/pkg_resources.html. The pkg_resources package is slated for removal as early as 2025-11-30. Refrain from using this package or pin to Setuptools<81.
   from pkg_resources import parse_version
 Using device: cuda
-Loading clean data from: /home/kstankiewicz/DTI/Multimodal-models-for-predicting-drug-target-interactions/src/datasets/clean.parquet
+Loading clean data from: /home/kappy/Repos/Multimodal-models-for-predicting-drug-target-interactions/src/datasets/clean.parquet
 Dataset size: 451858
-Train: 316632  Val: 44611  Test: 90615
-ChemBERTProcessor: loaded 236422 embeddings (dim=768) from /home/kstankiewicz/DTI/Multimodal-models-for-predicting-drug-target-interactions/src/datasets/ChemBERTa-zinc-base-v1.pt
-ESM2Processor: loaded 3580 embeddings (dim=1280) from /home/kstankiewicz/DTI/Multimodal-models-for-predicting-drug-target-interactions/src/datasets/esm2_t33_650M_UR50D.pt
-SMILES encoders:  ['FingerprintMLPEncoder', 'ChemBERTEncoder']
-Protein encoders: ['ESM2Encoder']
-MultimodalDTI(
-  (smiles_encoders): ModuleList(
-    (0): FingerprintMLPEncoder(
-      (mlp): Sequential(
-        (0): Linear(in_features=1024, out_features=512, bias=True)
-        (1): BatchNorm1d(512, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
-        (2): ReLU()
-        (3): Dropout(p=0.2, inplace=False)
-        (4): Linear(in_features=512, out_features=256, bias=True)
-        (5): BatchNorm1d(256, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
-        (6): ReLU()
-      )
-    )
-    (1): ChemBERTEncoder(
-      (projection): Sequential(
-        (0): Linear(in_features=768, out_features=256, bias=True)
-        (1): LayerNorm((256,), eps=1e-05, elementwise_affine=True)
-        (2): ReLU()
-      )
-    )
-  )
-  (protein_encoders): ModuleList(
-    (0): ESM2Encoder(
-      (projection): Sequential(
-        (0): Linear(in_features=1280, out_features=256, bias=True)
-        (1): LayerNorm((256,), eps=1e-05, elementwise_affine=True)
-        (2): ReLU()
-      )
-    )
-  )
-  (fusion): MLPFusion(
-    (classifier): Sequential(
-      (0): Linear(in_features=768, out_features=256, bias=True)
-      (1): BatchNorm1d(256, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
-      (2): ReLU()
-      (3): Dropout(p=0.3, inplace=False)
-      (4): Linear(in_features=256, out_features=64, bias=True)
-      (5): BatchNorm1d(64, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
-      (6): ReLU()
-      (7): Dropout(p=0.3, inplace=False)
-      (8): Linear(in_features=64, out_features=1, bias=True)
-    )
-  )
-)
-Epoch 001 | time=148.9s | train_loss=0.5500 | val_loss=0.4903 | val_auc=0.8415
-  ✓ New best model (epoch 1, val_loss=0.4903, val_auc=0.8415) saved to checkpoints/fp_chembert_vs_esm2.pt
-Epoch 002 | time=148.8s | train_loss=0.4647 | val_loss=0.4492 | val_auc=0.8706
-  ✓ New best model (epoch 2, val_loss=0.4492, val_auc=0.8706) saved to checkpoints/fp_chembert_vs_esm2.pt
-Epoch 003 | time=148.8s | train_loss=0.4213 | val_loss=0.4266 | val_auc=0.8847
-  ✓ New best model (epoch 3, val_loss=0.4266, val_auc=0.8847) saved to checkpoints/fp_chembert_vs_esm2.pt
-Epoch 004 | time=148.7s | train_loss=0.3904 | val_loss=0.4214 | val_auc=0.8892
-  ✓ New best model (epoch 4, val_loss=0.4214, val_auc=0.8892) saved to checkpoints/fp_chembert_vs_esm2.pt
-Epoch 005 | time=148.7s | train_loss=0.3680 | val_loss=0.4133 | val_auc=0.8951
-  ✓ New best model (epoch 5, val_loss=0.4133, val_auc=0.8951) saved to checkpoints/fp_chembert_vs_esm2.pt
-Epoch 006 | time=149.1s | train_loss=0.3485 | val_loss=0.4110 | val_auc=0.8992
-  ✓ New best model (epoch 6, val_loss=0.4110, val_auc=0.8992) saved to checkpoints/fp_chembert_vs_esm2.pt
-Epoch 007 | time=149.0s | train_loss=0.3328 | val_loss=0.4080 | val_auc=0.9005
-  ✓ New best model (epoch 7, val_loss=0.4080, val_auc=0.9005) saved to checkpoints/fp_chembert_vs_esm2.pt
-Epoch 008 | time=148.4s | train_loss=0.3187 | val_loss=0.4074 | val_auc=0.9046
-  ✓ New best model (epoch 8, val_loss=0.4074, val_auc=0.9046) saved to checkpoints/fp_chembert_vs_esm2.pt
-Epoch 009 | time=147.8s | train_loss=0.3054 | val_loss=0.4169 | val_auc=0.9050
-Epoch 010 | time=148.8s | train_loss=0.2954 | val_loss=0.4164 | val_auc=0.9057
-Epoch 011 | time=148.0s | train_loss=0.2865 | val_loss=0.4239 | val_auc=0.9060
-Epoch 012 | time=148.5s | train_loss=0.2770 | val_loss=0.4211 | val_auc=0.9075
-Epoch 013 | time=147.8s | train_loss=0.2682 | val_loss=0.4197 | val_auc=0.9086
-Epoch 014 | time=146.8s | train_loss=0.2612 | val_loss=0.4122 | val_auc=0.9104
-Epoch 015 | time=146.5s | train_loss=0.2344 | val_loss=0.4333 | val_auc=0.9130
-Epoch 016 | time=146.4s | train_loss=0.2246 | val_loss=0.4384 | val_auc=0.9131
-Early stopping — no improvement for 8 epochs
-
-Best model: epoch 8, val_loss=0.4074, val_auc=0.9131
-
-═══ Test Results ═══
-           auc: 0.9053
-         auprc: 0.8991
-            f1: 0.8039
-     precision: 0.8406
-        recall: 0.7702
-          loss: 0.4028
+Traceback (most recent call last):
+  File "/home/kappy/Repos/Multimodal-models-for-predicting-drug-target-interactions/src/main.py", line 344, in <module>
+    main()
+  File "/home/kappy/Repos/Multimodal-models-for-predicting-drug-target-interactions/src/main.py", line 251, in main
+    train_df, val_df, test_df = train_val_test_split_scaffold(df, proportions=ratios)
+                                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/kappy/Repos/Multimodal-models-for-predicting-drug-target-interactions/src/data/transform.py", line 37, in train_val_test_split_scaffold
+    train_smiles, val_smiles, test_smiles = randomized_scaffold_train_valid_test_split(
+                                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/kappy/Repos/Multimodal-models-for-predicting-drug-target-interactions/.venv/lib/python3.11/site-packages/sklearn/utils/_param_validation.py", line 218, in wrapper
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/home/kappy/Repos/Multimodal-models-for-predicting-drug-target-interactions/.venv/lib/python3.11/site-packages/skfp/model_selection/splitters/randomized_scaffold_split.py", line 314, in randomized_scaffold_train_valid_test_split
+    scaffold_sets = _create_scaffold_sets(data, use_csk)
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/kappy/Repos/Multimodal-models-for-predicting-drug-target-interactions/.venv/lib/python3.11/site-packages/skfp/model_selection/splitters/scaffold_split.py", line 347, in _create_scaffold_sets
+    mols = ensure_mols(data)
+           ^^^^^^^^^^^^^^^^^
+  File "/home/kappy/Repos/Multimodal-models-for-predicting-drug-target-interactions/.venv/lib/python3.11/site-packages/skfp/utils/validators.py", line 24, in ensure_mols
+    mols = [parser(x) for x in X]
+           ^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/kappy/Repos/Multimodal-models-for-predicting-drug-target-interactions/.venv/lib/python3.11/site-packages/skfp/utils/validators.py", line 24, in <listcomp>
+    mols = [parser(x) for x in X]
+            ^^^^^^^^^
+KeyboardInterrupt

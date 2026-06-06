@@ -30,6 +30,7 @@ from data.transform import (
     remove_duplicates,
     remove_nulls,
     train_test_val_split,
+    train_val_test_split_scaffold,
     tranform_ki_to_log_ki,
 )
 
@@ -247,7 +248,7 @@ def main() -> None:
 
     # ── 2. Train / val / test split ──────────────────────────────
     ratios = data_cfg.get("split_ratios", [0.7, 0.1, 0.2])
-    train_df, val_df, test_df = train_test_val_split(df, proportions=ratios)
+    train_df, val_df, test_df = train_val_test_split_scaffold(df, proportions=ratios)
     print(f"Train: {train_df.height}  Val: {val_df.height}  Test: {test_df.height}")
 
     # ── 3. Build processors and encoders ─────────────────────────

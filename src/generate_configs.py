@@ -20,11 +20,11 @@ base_config = {
         }
     },
     "training": {
-        "batch_size": 128,
-        "learning_rate": 0.0001,
-        "weight_decay": 0.00001,
-        "epochs": 100,
-        "patience": 8,
+        "batch_size": 256,
+        "learning_rate": 3e-4,
+        "weight_decay": 1e-5,
+        "epochs": 150,
+        "patience": 10,
         "num_workers": 4,
         "device": "auto"
     }
@@ -57,7 +57,7 @@ for i in range(1, len(protein_keys) + 1):
     for combo in itertools.combinations(protein_keys, i):
         protein_combos.append(list(combo))
 
-out_dir = Path("/home/kstankiewicz/DTI/Multimodal-models-for-predicting-drug-target-interactions/src/configs")
+out_dir = Path("./configs")
 
 import os
 # delete existing config files so we don't have overlapping old variants like gcn_cnn_esm2.yaml if we want to replace them all with systematic names
