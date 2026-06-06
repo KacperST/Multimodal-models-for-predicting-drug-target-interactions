@@ -31,6 +31,20 @@ def train_test_val_split(df, proportions=[0.7, 0.1, 0.2]):
 
     return df_train, df_val, df_test
 
+def train_val_test_split_scaffold(df, proportions=[0.7, 0.1, 0.2], random_state=42):
+    smiles = df["Ligand SMILES"].unique().to_list()
+    train_size, val_size, test_size = proportions
+    train_smiles, val_smiles, test_smiles = randomized_scaffold_train_valid_test_split(
+        smiles,
+        train_size=train_size,
+        valid_size=val_size,
+        test_size=test_size,
+        random_state=random_state
+    )
+    df_train = df.join(pl.DataFrame({"Ligand SMILES": train_smiles}), on="Ligand SMILES", how="semi")
+    df_val = df.join(pl.DataFrame({"Ligand SMILES": val_smiles}), on="Ligand SMILES", how="semi")
+    df_test = df.join(pl.DataFrame({"Ligand SMILES": test_smiles}), on="Ligand SMILES", how="semi")
+    return df_train, df_val, df_test
 
 def remove_cx_notation(df: pl.DataFrame):
     return df.with_columns(
