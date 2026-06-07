@@ -20,7 +20,7 @@ base_config = {
         }
     },
     "training": {
-        "batch_size": 256,
+        "batch_size": 512,
         "learning_rate": 3e-4,
         "weight_decay": 1e-5,
         "epochs": 150,

@@ -110,7 +110,7 @@ class Trainer:
         Returns:
             The model with the best validation loss weights loaded.
         """
-        best_val_loss = float("inf")
+        best_val_auc = 0.0
         best_epoch = 0
 
         for epoch in range(1, epochs + 1):
@@ -134,8 +134,8 @@ class Trainer:
                 flush=True
             )
 
-            if val_loss < best_val_loss:
-                best_val_loss = val_loss
+            if val_auc > best_val_auc:
+                best_val_auc = val_auc
                 best_epoch = epoch
                 ckpt_path = self.checkpoint_dir / self.checkpoint_filename
                 torch.save(self.model.state_dict(), ckpt_path)

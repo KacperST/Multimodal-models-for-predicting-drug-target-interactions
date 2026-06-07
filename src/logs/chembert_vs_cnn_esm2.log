@@ -3,7 +3,7 @@
 Using device: cuda
 Loading clean data from: /home/kappy/Repos/Multimodal-models-for-predicting-drug-target-interactions/src/datasets/clean.parquet
 Dataset size: 451858
-Train: 317796  Val: 44720  Test: 89342
+Train: 316417  Val: 44418  Test: 91023
 ChemBERTProcessor: loaded 236379 embeddings (dim=768) from /home/kappy/Repos/Multimodal-models-for-predicting-drug-target-interactions/src/datasets/ChemBERTa-zinc-base-v1.pt
 ESM2Processor: loaded 3580 embeddings (dim=1280) from /home/kappy/Repos/Multimodal-models-for-predicting-drug-target-interactions/src/datasets/esm2_t33_650M_UR50D.pt
 SMILES encoders:  ['ChemBERTEncoder']
@@ -70,45 +70,25 @@ MultimodalDTI(
     )
   )
 )
-Epoch 001 | time=104.9s | train_loss=0.5688 | val_loss=0.5538 | val_auc=0.7864
-  ✓ New best model (epoch 1, val_loss=0.5538, val_auc=0.7864) saved to checkpoints/chembert_vs_cnn_esm2.pt
-Epoch 002 | time=104.5s | train_loss=0.5227 | val_loss=0.5568 | val_auc=0.7994
-Epoch 003 | time=104.7s | train_loss=0.4990 | val_loss=0.5406 | val_auc=0.8166
-  ✓ New best model (epoch 3, val_loss=0.5406, val_auc=0.8166) saved to checkpoints/chembert_vs_cnn_esm2.pt
-Epoch 004 | time=103.0s | train_loss=0.4822 | val_loss=0.5140 | val_auc=0.8218
-  ✓ New best model (epoch 4, val_loss=0.5140, val_auc=0.8218) saved to checkpoints/chembert_vs_cnn_esm2.pt
-Epoch 005 | time=103.4s | train_loss=0.4691 | val_loss=0.5634 | val_auc=0.8268
-Epoch 006 | time=105.2s | train_loss=0.4575 | val_loss=0.5046 | val_auc=0.8321
-  ✓ New best model (epoch 6, val_loss=0.5046, val_auc=0.8321) saved to checkpoints/chembert_vs_cnn_esm2.pt
-Epoch 007 | time=102.8s | train_loss=0.4465 | val_loss=0.4962 | val_auc=0.8360
-  ✓ New best model (epoch 7, val_loss=0.4962, val_auc=0.8360) saved to checkpoints/chembert_vs_cnn_esm2.pt
-Epoch 008 | time=102.8s | train_loss=0.4376 | val_loss=0.5039 | val_auc=0.8387
-Epoch 009 | time=102.8s | train_loss=0.4290 | val_loss=0.4894 | val_auc=0.8458
-  ✓ New best model (epoch 9, val_loss=0.4894, val_auc=0.8458) saved to checkpoints/chembert_vs_cnn_esm2.pt
-Epoch 010 | time=102.8s | train_loss=0.4219 | val_loss=0.5175 | val_auc=0.8417
-Epoch 011 | time=102.9s | train_loss=0.4151 | val_loss=0.5002 | val_auc=0.8437
-Epoch 012 | time=102.8s | train_loss=0.4087 | val_loss=0.4963 | val_auc=0.8451
-Epoch 013 | time=102.9s | train_loss=0.4027 | val_loss=0.5034 | val_auc=0.8472
-Epoch 014 | time=102.9s | train_loss=0.3973 | val_loss=0.4809 | val_auc=0.8500
-  ✓ New best model (epoch 14, val_loss=0.4809, val_auc=0.8500) saved to checkpoints/chembert_vs_cnn_esm2.pt
-Epoch 015 | time=102.8s | train_loss=0.3926 | val_loss=0.5230 | val_auc=0.8447
-Epoch 016 | time=102.8s | train_loss=0.3869 | val_loss=0.5116 | val_auc=0.8468
-Epoch 017 | time=102.8s | train_loss=0.3823 | val_loss=0.4830 | val_auc=0.8522
-Epoch 018 | time=102.8s | train_loss=0.3782 | val_loss=0.4816 | val_auc=0.8539
-Epoch 019 | time=102.8s | train_loss=0.3747 | val_loss=0.4834 | val_auc=0.8514
-Epoch 020 | time=102.8s | train_loss=0.3710 | val_loss=0.4811 | val_auc=0.8573
-Epoch 021 | time=102.8s | train_loss=0.3463 | val_loss=0.4855 | val_auc=0.8602
-Epoch 022 | time=102.8s | train_loss=0.3393 | val_loss=0.4845 | val_auc=0.8618
-Epoch 023 | time=102.8s | train_loss=0.3355 | val_loss=0.4861 | val_auc=0.8597
-Epoch 024 | time=102.8s | train_loss=0.3313 | val_loss=0.4857 | val_auc=0.8602
-Early stopping — no improvement for 10 epochs
-
-Best model: epoch 14, val_loss=0.4809, val_auc=0.8602
-
-═══ Test Results ═══
-           auc: 0.8436
-         auprc: 0.8388
-            f1: 0.7566
-     precision: 0.7390
-        recall: 0.7751
-          loss: 0.4910
+Epoch 001 | time=102.8s | train_loss=0.5694 | val_loss=0.6166 | val_auc=0.7653
+  ✓ New best model (epoch 1, val_loss=0.6166, val_auc=0.7653) saved to checkpoints/chembert_vs_cnn_esm2.pt
+Epoch 002 | time=102.1s | train_loss=0.5233 | val_loss=0.5472 | val_auc=0.7952
+  ✓ New best model (epoch 2, val_loss=0.5472, val_auc=0.7952) saved to checkpoints/chembert_vs_cnn_esm2.pt
+Epoch 003 | time=102.1s | train_loss=0.4996 | val_loss=0.5278 | val_auc=0.8100
+  ✓ New best model (epoch 3, val_loss=0.5278, val_auc=0.8100) saved to checkpoints/chembert_vs_cnn_esm2.pt
+Epoch 004 | time=102.1s | train_loss=0.4815 | val_loss=0.5180 | val_auc=0.8180
+  ✓ New best model (epoch 4, val_loss=0.5180, val_auc=0.8180) saved to checkpoints/chembert_vs_cnn_esm2.pt
+Epoch 005 | time=102.0s | train_loss=0.4682 | val_loss=0.5778 | val_auc=0.8163
+Epoch 006 | time=102.1s | train_loss=0.4554 | val_loss=0.5262 | val_auc=0.8236
+  ✓ New best model (epoch 6, val_loss=0.5262, val_auc=0.8236) saved to checkpoints/chembert_vs_cnn_esm2.pt
+Epoch 007 | time=102.1s | train_loss=0.4453 | val_loss=0.5165 | val_auc=0.8310
+  ✓ New best model (epoch 7, val_loss=0.5165, val_auc=0.8310) saved to checkpoints/chembert_vs_cnn_esm2.pt
+Epoch 008 | time=102.0s | train_loss=0.4359 | val_loss=0.4999 | val_auc=0.8364
+  ✓ New best model (epoch 8, val_loss=0.4999, val_auc=0.8364) saved to checkpoints/chembert_vs_cnn_esm2.pt
+Epoch 009 | time=102.0s | train_loss=0.4274 | val_loss=0.4935 | val_auc=0.8406
+  ✓ New best model (epoch 9, val_loss=0.4935, val_auc=0.8406) saved to checkpoints/chembert_vs_cnn_esm2.pt
+Epoch 010 | time=102.1s | train_loss=0.4209 | val_loss=0.5072 | val_auc=0.8387
+Epoch 011 | time=102.0s | train_loss=0.4138 | val_loss=0.4899 | val_auc=0.8450
+  ✓ New best model (epoch 11, val_loss=0.4899, val_auc=0.8450) saved to checkpoints/chembert_vs_cnn_esm2.pt
+Epoch 012 | time=102.1s | train_loss=0.4066 | val_loss=0.5221 | val_auc=0.8411
+Epoch 013 | time=103.5s | train_loss=0.4012 | val_loss=0.5425 | val_auc=0.8422
