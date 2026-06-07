@@ -296,16 +296,19 @@ def main() -> None:
         train_ds, batch_size=batch_size, shuffle=True,
         collate_fn=collate_fn, num_workers=n_workers,
         pin_memory=True, persistent_workers=(n_workers > 0),
+        drop_last=True,
     )
     val_loader = DataLoader(
         val_ds, batch_size=batch_size, shuffle=False,
         collate_fn=collate_fn, num_workers=n_workers,
         pin_memory=True, persistent_workers=(n_workers > 0),
+        drop_last=True,
     )
     test_loader = DataLoader(
         test_ds, batch_size=batch_size, shuffle=False,
         collate_fn=collate_fn, num_workers=n_workers,
         pin_memory=True, persistent_workers=(n_workers > 0),
+        drop_last=True,
     )
 
     # ── 6. Build model ───────────────────────────────────────────
