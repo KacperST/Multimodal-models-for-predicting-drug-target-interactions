@@ -150,7 +150,7 @@ class Trainer:
                 )
                 break
 
-        print(f"\nBest model: epoch {best_epoch}, val_loss={best_val_loss:.4f}, val_auc={val_auc:.4f}")
+        print(f"\nBest model: epoch {best_epoch}, val_loss={val_loss:.4f}, val_auc={best_val_auc:.4f}")
 
         # Load best checkpoint
         best_ckpt = self.checkpoint_dir / self.checkpoint_filename

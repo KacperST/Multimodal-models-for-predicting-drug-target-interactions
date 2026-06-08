@@ -2,42 +2,54 @@ import os
 import glob
 import subprocess
 from pathlib import Path
-import sys
+
+# Definiujemy rdzenie CPU (taskset), na których chcemy pracować
+CPU_RANGE = "108-115"
 
 def main():
-    configs = sorted(glob.glob("configs/*.yaml"), key=lambda x: x.replace('.', '~'))
+    # Pobierz wszystkie wygenerowane configi
+    configs = sorted(glob.glob("configs/*.yaml"), key=lambda x: x.replace('.', '~'))[-7:]
     print(f"Znaleziono {len(configs)} plików .yaml w folderze configs/")
     if not configs:
         print("Nie znaleziono plików .yaml w folderze configs/")
         return
 
-    print(f"Uruchamiam trening sekwencyjny (lokalnie)...")
-    print(f"Logi poszczególnych modeli będą zapisywane w folderze logs/")
+    print(f"Znaleziono {len(configs)} modeli. Uruchamiam trening sekwencyjny...")
+    print(f"Logi poszczególnych modeli będą zapisywane w folderze src/logs/")
     print("-" * 60)
 
-    config_path = "configs/gcn_fp_chembert_vs_cnn_esm2.yaml"
-    config_name = Path(config_path).name
-    print(f"Start: {config_name}")
-    log_dir = Path("logs")
-    log_dir.mkdir(exist_ok=True)
-    log_file = log_dir / f"{Path(config_path).stem}.log"
-    
-    cmd = [
-        "uv", "run", "main.py",
-        "--config", config_path
-    ]
-    
-    env = os.environ.copy()
-    env["PYTHONUNBUFFERED"] = "1" 
-    
-
-    with open(log_file, "w") as f:
-        result = subprocess.run(cmd, stdout=f, stderr=subprocess.STDOUT, env=env)
+    # Trenuj sekwencyjnie (jeden po drugim)
+    for i, config_path in enumerate(configs, 1):
+        config_name = Path(config_path).name
+        print(f"[{i}/{len(configs)} | CPU {CPU_RANGE}] Start: {config_name}")
         
-    if result.returncode == 0:
-        print(f"SUKCES: {config_name}")
-    else:
-        print(f"BŁĄD ({result.returncode}): {config_name} (zobacz {log_file})")
+        log_dir = Path("logs")
+        log_dir.mkdir(exist_ok=True)
+        log_file = log_dir / f"{Path(config_path).stem}.log"
+        
+        cmd = [
+            "taskset", "-c", CPU_RANGE,
+            "uv", "run", "main.py",
+            "--config", config_path
+        ]
+        
+        # Zabezpieczenie przed tzw. "Thread Oversubscription Deadlock"
+        env = os.environ.copy()
+        env["OMP_NUM_THREADS"] = "8"
+        env["MKL_NUM_THREADS"] = "8"
+        env["OPENBLAS_NUM_THREADS"] = "8"
+        env["POLARS_MAX_THREADS"] = "8"
+        # Wymusza natychmiastowy zapis logów do pliku bez bufforowania
+        env["PYTHONUNBUFFERED"] = "1"
+
+        with open(log_file, "w") as f:
+            # Uruchomienie procesu podrzędnego
+            result = subprocess.run(cmd, stdout=f, stderr=subprocess.STDOUT, env=env)
+            
+        if result.returncode == 0:
+            print(f"[{i}/{len(configs)} | CPU {CPU_RANGE}] SUKCES: {config_name}")
+        else:
+            print(f"[{i}/{len(configs)} | CPU {CPU_RANGE}] BŁĄD ({result.returncode}): {config_name} (zobacz {log_file})")
             
     print("-" * 60)
     print("Wszystkie zadania treningowe zostały zakończone!")
