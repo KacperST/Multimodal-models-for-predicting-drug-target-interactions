@@ -310,18 +310,38 @@ def main() -> None:
     results_df = pl.DataFrame(results)
     results_df = results_df.sort("model_name")
 
+    preferred_order = [
+        "model_name",
+        "auc",
+        "auprc",
+        "f1",
+        "precision",
+        "recall",
+        "loss",
+        "config_path",
+        "checkpoint_path",
+        "device",
+        "n_train",
+        "n_val",
+        "n_test",
+        "status",
+        "error",
+    ]
+    ordered_columns = [column for column in preferred_order if column in results_df.columns]
+    ordered_columns += [column for column in results_df.columns if column not in ordered_columns]
+    results_df = results_df.select(ordered_columns)
+
     if "status" in results_df.columns:
         ok_df = results_df.filter(pl.col("status") == "ok")
         if not ok_df.is_empty():
-            print("\nTop models by AUC:")
+            print("\nTop models by F1 score:")
             print(
-                ok_df.sort("auc", descending=True).select(
+                ok_df.sort("f1", descending=True).select(
                     ["model_name", "auc", "auprc", "f1", "precision", "recall", "n_test"]
                 )
             )
-
     output_csv.parent.mkdir(parents=True, exist_ok=True)
-    results_df.write_csv(output_csv)
+    results_df.sort("f1", descending=True).select(["model_name", "auc", "auprc", "f1", "precision", "recall","loss"]).write_csv(output_csv)
     print(f"\nSaved comparison table to {output_csv}")
 
     _plot_results(results_df, output_plot)
