@@ -261,7 +261,7 @@ def main() -> None:
     # ── 4. Pre-compute caches (if needed) ────────────────────────
     for proc in smiles_processors:
         if isinstance(proc, GraphProcessor):
-            all_smiles = df["Ligand SMILES"].unique().to_list()
+            all_smiles = df["Ligand SMILES"].unique().sort().to_list()
             proc.build_cache(all_smiles)
             valid = proc.valid_smiles
             print(f"Valid SMILES graphs: {len(valid)}")

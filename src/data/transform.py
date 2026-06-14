@@ -32,7 +32,7 @@ def train_test_val_split(df, proportions=[0.7, 0.1, 0.2]):
     return df_train, df_val, df_test
 
 def train_val_test_split_scaffold(df, proportions=[0.7, 0.1, 0.2], random_state=42):
-    smiles = df["Ligand SMILES"].unique().to_list()
+    smiles = df["Ligand SMILES"].unique().sort().to_list()
     train_size, val_size, test_size = proportions
     train_smiles, val_smiles, test_smiles = randomized_scaffold_train_valid_test_split(
         smiles,
@@ -65,7 +65,9 @@ def remove_duplicates(df: pl.DataFrame) -> pl.DataFrame:
                 [
                     pl.col("Ki (nM)").mean().alias("Ki (nM)"),
                 ]
-            ).select(["Ligand SMILES", "Full_Protein_Sequence", "Ki (nM)"])
+            ).select(["Ligand SMILES", "Full_Protein_Sequence", "Ki (nM)"]).sort(
+                ["Ligand SMILES", "Full_Protein_Sequence"]
+            )
 
 
 def add_activity_label(df: pl.DataFrame, pki_threshold: float = 7.0) -> pl.DataFrame:

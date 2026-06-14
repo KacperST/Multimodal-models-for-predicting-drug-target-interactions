@@ -28,7 +28,7 @@ import torch.nn as nn
 import yaml
 from torch.utils.data import DataLoader
 
-from data.transform import train_test_val_split
+from data.transform import train_val_test_split_scaffold
 from datasets.dti_dataset import DTIDataset, build_collate_fn
 from main import (  # type: ignore[import-not-found]
     ROOT_DIR,
@@ -96,9 +96,9 @@ def _filter_splits_for_graph_processors(
 
     for processor in smiles_processors:
         if isinstance(processor, GraphProcessor):
-            all_smiles = train_df["Ligand SMILES"].unique().to_list()
-            all_smiles += val_df["Ligand SMILES"].unique().to_list()
-            all_smiles += test_df["Ligand SMILES"].unique().to_list()
+            all_smiles = train_df["Ligand SMILES"].unique().sort().to_list()
+            all_smiles += val_df["Ligand SMILES"].unique().sort().to_list()
+            all_smiles += test_df["Ligand SMILES"].unique().sort().to_list()
             processor.build_cache(list(dict.fromkeys(all_smiles)))
             valid_smiles = processor.valid_smiles
 
@@ -265,7 +265,7 @@ def main() -> None:
     shared_df = load_data(reference_cfg["data"])
     print(f"Loaded dataset with {shared_df.height} rows")
 
-    split_frames = train_test_val_split(
+    split_frames = train_val_test_split_scaffold(
         shared_df,
         proportions=reference_cfg["data"].get("split_ratios", [0.7, 0.1, 0.2]),
     )
