@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import numpy as np
 import torch
+from functools import lru_cache
 
 from processing.base import InputProcessor
 
@@ -71,6 +72,7 @@ class FingerprintProcessor(InputProcessor):
             self._dim = dummy.shape[1]
         return self._dim
 
+    @lru_cache(maxsize=None)
     def process(self, raw_input: str) -> torch.Tensor:
         arr = self.fp.transform([raw_input])  # (1, n_bits)
         if hasattr(arr, "toarray"):

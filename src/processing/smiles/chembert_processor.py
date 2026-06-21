@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import torch
+import torch
 from transformers import AutoTokenizer
 from functools import lru_cache
 
@@ -31,7 +32,7 @@ class ChemBERTProcessor(InputProcessor):
             f"(max_length={max_length})"
         )
 
-    @lru_cache(maxsize=200000)
+    @lru_cache(maxsize=None)
     def process(self, raw_input: str) -> dict[str, torch.Tensor]:
         """Tokenize a single SMILES string.
 

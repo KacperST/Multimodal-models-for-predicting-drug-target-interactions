@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import torch
+from functools import lru_cache
 from torch.nn.utils.rnn import pad_sequence
 
 from processing.base import InputProcessor
@@ -28,6 +29,7 @@ class CNNTokenizer(InputProcessor):
         }
         self.vocab_size = len(self.char_to_idx) + 1  # +1 for padding token
 
+    @lru_cache(maxsize=None)
     def process(self, raw_input: str) -> torch.Tensor:
         seq = raw_input.upper()[: self.max_len]
         ids = [self.char_to_idx.get(c, 0) for c in seq]
