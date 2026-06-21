@@ -13,19 +13,15 @@ base_config = {
     "smiles_encoders": [],
     "protein_encoders": [],
     "fusion": {
-        "type": "mlp",
-        "params": {
-            "hidden_dims": [256, 64],
-            "dropout": 0.3
-        }
+        "type": "cross_attention",
     },
     "training": {
-        "batch_size": 32,
+        "batch_size": 256,
         "learning_rate": 0.00005,
         "weight_decay": 0.01,
         "epochs": 100,
         "patience": 8,
-        "num_workers": 4,
+        "num_workers": 8,
         "device": "auto"
     }
 }
