@@ -1,0 +1,40 @@
+graph TD
+    %% Styling definitions
+    classDef inputStyle fill:#dae8fc,stroke:#6c8ebf,stroke-width:1.5px,color:#000000;
+    classDef defaultStyle fill:#ffffff,stroke:#333333,stroke-width:1.5px,color:#000000;
+    classDef poolStyle fill:#e1d5e7,stroke:#b854d4,stroke-width:1.5px,color:#000000;
+    classDef outputStyle fill:#e2f0d9,stroke:#385723,stroke-width:1.5px,color:#000000;
+
+    %% Nodes
+    A["Input Graph
+    batch.x & batch.edge_index"]:::inputStyle
+    B["AtomEncoder"]:::defaultStyle
+    
+    A --> B
+
+    subgraph GCN_Layers ["GCN Layers (Default: 3)
+⠀"]
+        C["GCNConv"]:::defaultStyle
+        D["BatchNorm1d"]:::defaultStyle
+        E["LeakyReLU"]:::defaultStyle
+        
+        C --> D
+        D --> E
+    end
+
+    A -->|"batch.edge_index"| GCN_Layers
+    B --> GCN_Layers
+
+    E -.->|"next layer"| C
+
+    %% Output
+    F["global_add_pool
+    (Global Sum Pooling)"]:::poolStyle
+    G["Graph Representation
+    Vector"]:::outputStyle
+
+    E --> F
+    F --> G
+
+    %% Container styling
+    style GCN_Layers fill:#fff2cc,stroke:#d6b656,stroke-width:1.5px,stroke-dasharray: 5 5,color:#d6b656

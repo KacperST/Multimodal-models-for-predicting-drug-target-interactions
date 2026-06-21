@@ -8,7 +8,18 @@ CPU_RANGE = "0-7"
 
 def main():
     # Pobierz wszystkie wygenerowane configi
-    configs = sorted(glob.glob("configs/*.yaml"))[-8:]
+    configs = [
+        "configs/gcn_vs_cnn_esm2.yaml",
+        "configs/gcn_vs_cnn_esm1.yaml",
+        "configs/gcn_vs_esm2.yaml",
+        "configs/gcn_chembert_vs_cnn_esm2.yaml",
+        "configs/gcn_chembert_vs_cnn.yaml",
+        "configs/gcn_fp_chembert_vs_cnn_esm2.yaml",
+        "configs/gcn_fp_vs_esm2.yaml",
+        "configs/gcn_fp_vs_cnn.yaml",
+        "configs/gcn_fp_chembert_vs_cnn.yaml",
+        "configs/fp_vs_esm2.yaml",
+    ]
     print(f"Znaleziono {len(configs)} plików .yaml w folderze configs/")
     if not configs:
         print("Nie znaleziono plików .yaml w folderze configs/")

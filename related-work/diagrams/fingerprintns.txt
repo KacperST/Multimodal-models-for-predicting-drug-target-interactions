@@ -1,0 +1,46 @@
+graph TD
+    %% Styling definitions
+    classDef inputStyle fill:#dae8fc,stroke:#6c8ebf,stroke-width:1.5px,color:#000000;
+    classDef defaultStyle fill:#ffffff,stroke:#333333,stroke-width:1.5px,color:#000000;
+    classDef outputStyle fill:#e2f0d9,stroke:#385723,stroke-width:1.5px,color:#000000;
+
+    %% Input Node
+    A["Ligand SMILES"]:::inputStyle
+
+    %% Processor Container
+    subgraph Processor ["Molecular Fingerprint Computation                                     "]
+        B["scikit-fingerprints (skfp)
+        e.g., ECFP/Morgan, MACCS
+        (Generates 1D vector, e.g., size 2048)"]:::defaultStyle
+    end
+
+    A --> Processor
+
+    %% MLP Encoder Container
+    subgraph MLP_Encoder ["Trainable MLP Encoder                                     "]
+        L1["Linear Layer
+        (e.g., 2048 → 512)"]:::defaultStyle
+        N1["BatchNorm1d + ReLU"]:::defaultStyle
+        D1["Dropout (p=0.2)"]:::defaultStyle
+        
+        L2["Linear Layer
+        (e.g., 512 → 256)"]:::defaultStyle
+        N2["BatchNorm1d + ReLU"]:::defaultStyle
+        
+        L1 --> N1
+        N1 --> D1
+        D1 --> L2
+        L2 --> N2
+    end
+
+    B --> MLP_Encoder
+    
+    %% Output Node
+    O["Final Ligand
+    Representation Vector"]:::outputStyle
+    
+    N2 --> O
+
+    %% Container styling
+    style Processor fill:#fff2cc,stroke:#d6b656,stroke-width:1.5px,stroke-dasharray: 5 5,color:#d6b656
+    style MLP_Encoder fill:#e1d5e7,stroke:#b854d4,stroke-width:1.5px,stroke-dasharray: 5 5,color:#b854d4
