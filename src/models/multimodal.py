@@ -38,6 +38,17 @@ class MultimodalDTI(nn.Module):
         self.protein_encoders = nn.ModuleList(protein_encoders)
         self.fusion = fusion
 
+        # Pre-cache which encoders have trainable params (avoid iterating
+        # over all parameters on every forward pass — matters for 650M ESM2)
+        self._smiles_trainable = [
+            any(p.requires_grad for p in enc.parameters())
+            for enc in smiles_encoders
+        ]
+        self._protein_trainable = [
+            any(p.requires_grad for p in enc.parameters())
+            for enc in protein_encoders
+        ]
+
     # ── Convenience properties ───────────────────────────────────
 
     @property
@@ -73,15 +84,27 @@ class MultimodalDTI(nn.Module):
             protein_batches = [protein_batches]
 
         smiles_embs = [
-            enc(batch)
-            for enc, batch in zip(self.smiles_encoders, smiles_batches)
+            self._run_encoder(enc, batch, trainable)
+            for enc, batch, trainable in zip(
+                self.smiles_encoders, smiles_batches, self._smiles_trainable
+            )
         ]
         protein_embs = [
-            enc(batch)
-            for enc, batch in zip(self.protein_encoders, protein_batches)
+            self._run_encoder(enc, batch, trainable)
+            for enc, batch, trainable in zip(
+                self.protein_encoders, protein_batches, self._protein_trainable
+            )
         ]
 
         smiles_emb = torch.cat(smiles_embs, dim=1)   # (B, Σ smiles_dims)
         protein_emb = torch.cat(protein_embs, dim=1)  # (B, Σ protein_dims)
 
         return self.fusion(smiles_emb, protein_emb)
+
+    @staticmethod
+    def _run_encoder(enc: Encoder, batch, has_trainable: bool) -> torch.Tensor:
+        """Run encoder, skipping grad graph for fully-frozen encoders."""
+        if has_trainable:
+            return enc(batch)
+        with torch.no_grad():
+            return enc(batch).detach()

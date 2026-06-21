@@ -30,17 +30,12 @@ protein_encoders:
     - 15
     max_seq_len: 1000
 fusion:
-  type: mlp
-  params:
-    hidden_dims:
-    - 256
-    - 64
-    dropout: 0.3
+  type: cross_attention
 training:
-  batch_size: 32
+  batch_size: 256
   learning_rate: 5.0e-05
   weight_decay: 0.01
   epochs: 100
   patience: 8
-  num_workers: 4
+  num_workers: 8
   device: auto

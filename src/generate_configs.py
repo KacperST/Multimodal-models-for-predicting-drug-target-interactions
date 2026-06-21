@@ -22,7 +22,8 @@ base_config = {
         "epochs": 100,
         "patience": 8,
         "num_workers": 8,
-        "device": "auto"
+        "device": "auto",
+        "grad_accum_steps": 4
     }
 }
 

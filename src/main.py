@@ -347,6 +347,7 @@ def main() -> None:
         device=device,
         checkpoint_filename=args.model_name,
         patience=train_cfg.get("patience", 8),
+        grad_accum_steps=train_cfg.get("grad_accum_steps", 1),
     )
     model = trainer.fit(train_loader, val_loader, epochs=train_cfg.get("epochs", 50))
 

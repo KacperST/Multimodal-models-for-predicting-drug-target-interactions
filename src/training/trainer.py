@@ -31,6 +31,7 @@ class Trainer:
         patience: int = 8,
         scheduler_patience: int = 5,
         scheduler_factor: float = 0.5,
+        grad_accum_steps: int = 1,
     ) -> None:
         self.model = model.to(device)
         self.optimizer = optimizer
@@ -40,6 +41,10 @@ class Trainer:
         self.checkpoint_dir.mkdir(parents=True, exist_ok=True)
         self.checkpoint_filename = checkpoint_filename
         self.patience = patience
+        self.grad_accum_steps = grad_accum_steps
+
+        # Speed up convolution operations with consistent input sizes
+        torch.backends.cudnn.benchmark = True
 
         self.scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
             optimizer, patience=scheduler_patience, factor=scheduler_factor
@@ -55,23 +60,31 @@ class Trainer:
         total_loss = 0.0
         pbar = tqdm(loader, desc="Train", leave=False, disable=not sys.stdout.isatty())
 
-        for smiles_batch, protein_batch, y in pbar:
+        self.optimizer.zero_grad(set_to_none=True)
+        for step, (smiles_batch, protein_batch, y) in enumerate(pbar):
             smiles_batch = _to_device(smiles_batch, self.device)
             protein_batch = _to_device(protein_batch, self.device)
             y = y.to(self.device)
 
-            self.optimizer.zero_grad()
             with torch.autocast(device_type=self.device.type, dtype=torch.bfloat16):
                 logits = self.model(smiles_batch, protein_batch).squeeze(1)
                 loss = self.criterion(logits, y)
-            
-            loss.backward()
-            nn.utils.clip_grad_norm_(
-                (p for p in self.model.parameters() if p.requires_grad), 1.0
-            )
-            self.optimizer.step()
+                # Scale loss for gradient accumulation
+                if self.grad_accum_steps > 1:
+                    loss = loss / self.grad_accum_steps
 
-            total_loss += loss.item()
+            loss.backward()
+
+            if (step + 1) % self.grad_accum_steps == 0 or (step + 1) == len(loader):
+                nn.utils.clip_grad_norm_(
+                    (p for p in self.model.parameters() if p.requires_grad), 1.0
+                )
+                self.optimizer.step()
+                self.optimizer.zero_grad(set_to_none=True)
+
+            total_loss += loss.item() * (
+                self.grad_accum_steps if self.grad_accum_steps > 1 else 1
+            )
 
         return total_loss / len(loader)
 
@@ -175,11 +188,15 @@ class Trainer:
 
 
 def _to_device(obj, device: torch.device):
-    """Move a tensor, PyG Batch, list, or dict of tensors to *device*."""
+    """Move a tensor, PyG Batch, list, or dict of tensors to *device*.
+
+    Uses ``non_blocking=True`` so CPU→GPU transfers can overlap with
+    computation when ``pin_memory=True`` is set on the DataLoader.
+    """
     if isinstance(obj, (list, tuple)):
         return type(obj)(_to_device(item, device) for item in obj)
     if hasattr(obj, "to"):
-        return obj.to(device)
+        return obj.to(device, non_blocking=True)
     if isinstance(obj, dict):
         return {k: _to_device(v, device) for k, v in obj.items()}
     return obj
