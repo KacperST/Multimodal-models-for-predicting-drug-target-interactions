@@ -36,7 +36,7 @@ class MLPFusion(FusionModule):
             layers.extend(
                 [
                     nn.Linear(in_dim, h_dim),
-                    nn.BatchNorm1d(h_dim),
+                    nn.LayerNorm(h_dim),
                     nn.ReLU(),
                     nn.Dropout(dropout),
                 ]

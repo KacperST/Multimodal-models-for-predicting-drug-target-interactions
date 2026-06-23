@@ -25,7 +25,7 @@ class GCNEncoder(Encoder):
             [GCNConv(hidden_dim, hidden_dim) for _ in range(num_layers)]
         )
         self.bns = nn.ModuleList(
-            [nn.BatchNorm1d(hidden_dim) for _ in range(num_layers)]
+            [nn.LayerNorm(hidden_dim) for _ in range(num_layers)]
         )
 
     def forward(self, batch) -> torch.Tensor:
