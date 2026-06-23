@@ -129,7 +129,7 @@ class Trainer:
         Returns:
             The model with the best validation loss weights loaded.
         """
-        best_val_loss = float("inf")
+        best_val_auc = 0.0
         best_epoch = 0
 
         for epoch in range(1, epochs + 1):
@@ -153,8 +153,8 @@ class Trainer:
                 flush=True
             )
 
-            if val_loss < best_val_loss:
-                best_val_loss = val_loss
+            if val_auc > best_val_auc:
+                best_val_auc = val_auc
                 best_epoch = epoch
                 ckpt_path = self.checkpoint_dir / self.checkpoint_filename
                 trainable_keys = {
@@ -177,7 +177,7 @@ class Trainer:
                 )
                 break
 
-        print(f"\nBest model: epoch {best_epoch}, val_loss={best_val_loss:.4f}, val_auc={val_auc:.4f}")
+        print(f"\nBest model: epoch {best_epoch}, val_loss={val_loss:.4f}, val_auc={best_val_auc:.4f}")
 
         # Load best checkpoint
         best_ckpt = self.checkpoint_dir / self.checkpoint_filename

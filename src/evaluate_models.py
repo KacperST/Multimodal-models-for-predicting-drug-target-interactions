@@ -97,9 +97,9 @@ def _filter_splits_for_graph_processors(
 
     for processor in smiles_processors:
         if isinstance(processor, GraphProcessor):
-            all_smiles = train_df["Ligand SMILES"].unique().to_list()
-            all_smiles += val_df["Ligand SMILES"].unique().to_list()
-            all_smiles += test_df["Ligand SMILES"].unique().to_list()
+            all_smiles = train_df["Ligand SMILES"].unique().sort().to_list()
+            all_smiles += val_df["Ligand SMILES"].unique().sort().to_list()
+            all_smiles += test_df["Ligand SMILES"].unique().sort().to_list()
             processor.build_cache(list(dict.fromkeys(all_smiles)))
             valid_smiles = processor.valid_smiles
 

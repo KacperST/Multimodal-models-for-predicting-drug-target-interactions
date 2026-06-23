@@ -278,8 +278,8 @@ def main() -> None:
     print(f"Protein encoders: {[type(e).__name__ for e in protein_encoders]}")
 
     # ── 4. Pre-compute caches (if needed) ────────────────────────
-    all_smiles = df["Ligand SMILES"].unique().to_list()
-    all_proteins = df["Full_Protein_Sequence"].unique().to_list()
+    all_smiles = df["Ligand SMILES"].unique().sort().to_list()
+    all_proteins = df["Full_Protein_Sequence"].unique().sort().to_list()
 
     for proc in smiles_processors:
         proc.build_cache(all_smiles)
