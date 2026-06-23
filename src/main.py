@@ -275,15 +275,21 @@ def main() -> None:
     print(f"Protein encoders: {[type(e).__name__ for e in protein_encoders]}")
 
     # ── 4. Pre-compute caches (if needed) ────────────────────────
+    all_smiles = df["Ligand SMILES"].unique().to_list()
+    all_proteins = df["Full_Protein_Sequence"].unique().to_list()
+
     for proc in smiles_processors:
-        if isinstance(proc, GraphProcessor):
-            all_smiles = df["Ligand SMILES"].unique().to_list()
-            proc.build_cache(all_smiles)
+        proc.build_cache(all_smiles)
+        # Only GraphProcessor might drop invalid SMILES
+        if hasattr(proc, "valid_smiles"):
             valid = proc.valid_smiles
-            print(f"Valid SMILES graphs: {len(valid)}")
+            print(f"{type(proc).__name__}: Valid SMILES = {len(valid)}")
             train_df = train_df.filter(pl.col("Ligand SMILES").is_in(valid))
             val_df = val_df.filter(pl.col("Ligand SMILES").is_in(valid))
             test_df = test_df.filter(pl.col("Ligand SMILES").is_in(valid))
+
+    for proc in protein_processors:
+        proc.build_cache(all_proteins)
 
     # ── 5. Build datasets and data loaders ───────────────────────
     def _make_dataset(split_df: pl.DataFrame) -> DTIDataset:

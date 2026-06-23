@@ -1,8 +1,8 @@
 from __future__ import annotations
 
 import torch
-from functools import lru_cache
 from torch.nn.utils.rnn import pad_sequence
+from tqdm import tqdm
 
 from processing.base import InputProcessor
 
@@ -28,12 +28,24 @@ class CNNTokenizer(InputProcessor):
             c: i + 1 for i, c in enumerate(chars)
         }
         self.vocab_size = len(self.char_to_idx) + 1  # +1 for padding token
+        self._cache: dict[str, torch.Tensor] = {}
 
-    @lru_cache(maxsize=None)
+    def build_cache(self, inputs: list[str]) -> None:
+        """Pre-compute CNN tokens in the main process."""
+        print(f"Building CNN tokenizer cache for {len(inputs)} proteins...")
+        for raw_input in tqdm(inputs):
+            if raw_input in self._cache:
+                continue
+            seq = raw_input.upper()[: self.max_len]
+            ids = [self.char_to_idx.get(c, 0) for c in seq]
+            self._cache[raw_input] = torch.tensor(ids, dtype=torch.long)
+
     def process(self, raw_input: str) -> torch.Tensor:
-        seq = raw_input.upper()[: self.max_len]
-        ids = [self.char_to_idx.get(c, 0) for c in seq]
-        return torch.tensor(ids, dtype=torch.long)
+        if raw_input not in self._cache:
+            seq = raw_input.upper()[: self.max_len]
+            ids = [self.char_to_idx.get(c, 0) for c in seq]
+            return torch.tensor(ids, dtype=torch.long)
+        return self._cache[raw_input].clone()
 
     def collate(self, batch: list[torch.Tensor]) -> torch.Tensor:
         return pad_sequence(batch, batch_first=True, padding_value=0)

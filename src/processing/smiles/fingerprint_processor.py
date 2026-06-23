@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import numpy as np
 import torch
-from functools import lru_cache
+from tqdm import tqdm
 
 from processing.base import InputProcessor
 
@@ -63,6 +63,7 @@ class FingerprintProcessor(InputProcessor):
 
         # Compute one dummy fingerprint to determine output dimension
         self._dim: int | None = None
+        self._cache: dict[str, torch.Tensor] = {}
 
     @property
     def fingerprint_dim(self) -> int:
@@ -72,12 +73,25 @@ class FingerprintProcessor(InputProcessor):
             self._dim = dummy.shape[1]
         return self._dim
 
-    @lru_cache(maxsize=None)
+    def build_cache(self, inputs: list[str]) -> None:
+        """Pre-compute all fingerprints in the main process."""
+        print(f"Building {self.fp_type} fingerprint cache for {len(inputs)} SMILES...")
+        for raw_input in tqdm(inputs):
+            if raw_input in self._cache:
+                continue
+            arr = self.fp.transform([raw_input])  # (1, n_bits)
+            if hasattr(arr, "toarray"):
+                arr = arr.toarray()  # sparse → dense
+            self._cache[raw_input] = torch.tensor(np.asarray(arr).squeeze(0), dtype=torch.float)
+
     def process(self, raw_input: str) -> torch.Tensor:
-        arr = self.fp.transform([raw_input])  # (1, n_bits)
-        if hasattr(arr, "toarray"):
-            arr = arr.toarray()  # sparse → dense
-        return torch.tensor(np.asarray(arr).squeeze(0), dtype=torch.float)
+        if raw_input not in self._cache:
+            # Fallback just in case (shouldn't happen if build_cache was called)
+            arr = self.fp.transform([raw_input])
+            if hasattr(arr, "toarray"):
+                arr = arr.toarray()
+            return torch.tensor(np.asarray(arr).squeeze(0), dtype=torch.float)
+        return self._cache[raw_input].clone()
 
     def collate(self, batch: list[torch.Tensor]) -> torch.Tensor:
         return torch.stack(batch)

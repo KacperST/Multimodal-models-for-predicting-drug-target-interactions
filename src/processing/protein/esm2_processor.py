@@ -1,9 +1,8 @@
 from __future__ import annotations
 
 import torch
-import torch
 from transformers import AutoTokenizer
-from functools import lru_cache
+from tqdm import tqdm
 
 from processing.base import InputProcessor
 
@@ -27,12 +26,28 @@ class ESM2Processor(InputProcessor):
     ) -> None:
         self.tokenizer = AutoTokenizer.from_pretrained(model_name)
         self.max_length = max_length
+        self._cache: dict[str, dict[str, torch.Tensor]] = {}
         print(
             f"ESM2Processor: tokenizer loaded for {model_name} "
             f"(max_length={max_length})"
         )
 
-    @lru_cache(maxsize=None)
+    def build_cache(self, inputs: list[str]) -> None:
+        """Pre-compute tokenization in the main process."""
+        print(f"Building ESM2 cache for {len(inputs)} proteins...")
+        for raw_input in tqdm(inputs):
+            if raw_input in self._cache:
+                continue
+            encoded = self.tokenizer(
+                raw_input,
+                truncation=True,
+                max_length=self.max_length,
+                padding=False,
+                add_special_tokens=True,
+                return_tensors="pt",
+            )
+            self._cache[raw_input] = {k: v.squeeze(0) for k, v in encoded.items()}
+
     def process(self, raw_input: str) -> dict[str, torch.Tensor]:
         """Tokenize a single protein sequence.
 
@@ -40,16 +55,17 @@ class ESM2Processor(InputProcessor):
             Dict with ``input_ids`` and ``attention_mask``, each of
             shape ``(L,)`` where *L* is the tokenized length (no padding).
         """
-        encoded = self.tokenizer(
-            raw_input,
-            truncation=True,
-            max_length=self.max_length,
-            padding=False,
-            add_special_tokens=True,
-            return_tensors="pt",
-        )
-        # squeeze batch dim → (L,)
-        return {k: v.squeeze(0) for k, v in encoded.items()}
+        if raw_input not in self._cache:
+            encoded = self.tokenizer(
+                raw_input,
+                truncation=True,
+                max_length=self.max_length,
+                padding=False,
+                add_special_tokens=True,
+                return_tensors="pt",
+            )
+            return {k: v.squeeze(0) for k, v in encoded.items()}
+        return {k: v.clone() for k, v in self._cache[raw_input].items()}
 
     def collate(
         self, batch: list[dict[str, torch.Tensor]]

@@ -24,6 +24,14 @@ class InputProcessor(ABC):
         """
         ...
 
+    def build_cache(self, inputs: list[str]) -> None:
+        """Pre-compute and cache representations for a list of inputs.
+        
+        Optional method. Implement this if processing is CPU intensive
+        and should be done in the main process before DataLoader forks.
+        """
+        pass
+
     @abstractmethod
     def collate(self, batch: list[Any]) -> Any:
         """Combine a list of processed samples into a single batched tensor.
