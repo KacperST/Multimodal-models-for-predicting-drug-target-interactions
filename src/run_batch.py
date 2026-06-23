@@ -10,7 +10,7 @@ def main():
     # Pobierz wszystkie wygenerowane configi
     configs = [
         "configs/gcn_vs_cnn_esm2.yaml",
-        "configs/gcn_vs_cnn_esm1.yaml",
+        "configs/gcn_vs_cnn.yaml",
         "configs/gcn_vs_esm2.yaml",
         "configs/gcn_chembert_vs_cnn_esm2.yaml",
         "configs/gcn_chembert_vs_cnn.yaml",
@@ -39,7 +39,6 @@ def main():
         log_file = log_dir / f"{Path(config_path).stem}.log"
         
         cmd = [
-            "taskset", "-c", CPU_RANGE,
             "uv", "run", "main.py",
             "--config", config_path
         ]
