@@ -65,7 +65,7 @@ class ESM2Processor(InputProcessor):
                 return_tensors="pt",
             )
             return {k: v.squeeze(0) for k, v in encoded.items()}
-        return {k: v.clone() for k, v in self._cache[raw_input].items()}
+        return self._cache[raw_input]
 
     def collate(
         self, batch: list[dict[str, torch.Tensor]]

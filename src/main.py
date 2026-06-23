@@ -38,6 +38,7 @@ from data.transform import (
 )
 
 from datasets.dti_dataset import DTIDataset, build_collate_fn
+from datasets.samplers import ProteinGroupedBatchSampler
 from encoders.protein.cnn_encoder import ProteinCNNEncoder
 from encoders.protein.esm2_encoder import ESM2Encoder
 from encoders.smiles.chembert_encoder import ChemBERTEncoder
@@ -115,6 +116,7 @@ def _build_one_smiles(enc_cfg: dict, device: str = "cuda:0") -> tuple[InputProce
             lora_alpha=params.get("lora_alpha", 32),
             lora_dropout=params.get("lora_dropout", 0.05),
             device=device,
+            gradient_checkpointing=params.get("gradient_checkpointing", True),
         )
     else:
         raise ValueError(f"Unknown smiles encoder type: {enc_type}")
@@ -149,6 +151,7 @@ def _build_one_protein(enc_cfg: dict, device: str = "cuda:0") -> tuple[InputProc
             lora_alpha=params.get("lora_alpha", 32),
             lora_dropout=params.get("lora_dropout", 0.05),
             device=device,
+            gradient_checkpointing=params.get("gradient_checkpointing", True),
         )
     else:
         raise ValueError(f"Unknown protein encoder type: {enc_type}")
@@ -309,11 +312,17 @@ def main() -> None:
     batch_size = train_cfg.get("batch_size", 256)
     n_workers = train_cfg.get("num_workers", 4)
 
+    # Use protein-grouped sampling so ESM2's deduplication can skip
+    # redundant forward passes (~3 unique proteins/batch vs ~247).
+    train_sampler = ProteinGroupedBatchSampler(
+        protein_sequences=train_df["Full_Protein_Sequence"].to_list(),
+        batch_size=batch_size,
+        drop_last=True,
+    )
     train_loader = DataLoader(
-        train_ds, batch_size=batch_size, shuffle=True,
+        train_ds, batch_sampler=train_sampler,
         collate_fn=collate_fn, num_workers=n_workers,
         pin_memory=True, persistent_workers=(n_workers > 0),
-        drop_last=True,
     )
     val_loader = DataLoader(
         val_ds, batch_size=batch_size, shuffle=False,

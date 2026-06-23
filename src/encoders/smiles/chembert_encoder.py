@@ -36,12 +36,12 @@ class ChemBERTEncoder(Encoder):
         lora_dropout: float = 0.05,
         lora_target_modules: list[str] | None = None,
         device: str = "cuda:0",
+        gradient_checkpointing: bool = True,
     ) -> None:
         super().__init__()
 
         if lora_target_modules is None:
             lora_target_modules=["query", "key", "value", "dense"]
-        # ── Load base model in bfloat16 with SDPA ────────────────
         base_model = AutoModel.from_pretrained(
             model_name,
             torch_dtype=torch.bfloat16,
@@ -50,10 +50,10 @@ class ChemBERTEncoder(Encoder):
             add_pooling_layer=False,
         )
 
-        # ── Enable gradient checkpointing ────────────────────────
-        base_model.gradient_checkpointing_enable(
-            gradient_checkpointing_kwargs={"use_reentrant": False}
-        )
+        if gradient_checkpointing:
+            base_model.gradient_checkpointing_enable(
+                gradient_checkpointing_kwargs={"use_reentrant": False}
+            )
 
         # ── Attach LoRA adapters ─────────────────────────────────
         lora_config = LoraConfig(

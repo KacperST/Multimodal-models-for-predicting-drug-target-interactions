@@ -45,7 +45,7 @@ class CNNTokenizer(InputProcessor):
             seq = raw_input.upper()[: self.max_len]
             ids = [self.char_to_idx.get(c, 0) for c in seq]
             return torch.tensor(ids, dtype=torch.long)
-        return self._cache[raw_input].clone()
+        return self._cache[raw_input]
 
     def collate(self, batch: list[torch.Tensor]) -> torch.Tensor:
         return pad_sequence(batch, batch_first=True, padding_value=0)

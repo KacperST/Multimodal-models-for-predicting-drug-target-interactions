@@ -91,7 +91,7 @@ class FingerprintProcessor(InputProcessor):
             if hasattr(arr, "toarray"):
                 arr = arr.toarray()
             return torch.tensor(np.asarray(arr).squeeze(0), dtype=torch.float)
-        return self._cache[raw_input].clone()
+        return self._cache[raw_input]
 
     def collate(self, batch: list[torch.Tensor]) -> torch.Tensor:
         return torch.stack(batch)

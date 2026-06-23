@@ -36,12 +36,12 @@ class ESM2Encoder(Encoder):
         lora_dropout: float = 0.05,
         lora_target_modules: list[str] | None = None,
         device: str = "cuda:0",
+        gradient_checkpointing: bool = True,
     ) -> None:
         super().__init__()
 
         if lora_target_modules is None:
             lora_target_modules=["query", "key", "value", "dense"]
-        # ── Load base model in bfloat16 with SDPA ────────────────
         base_model = AutoModel.from_pretrained(
             model_name,
             torch_dtype=torch.bfloat16,
@@ -50,10 +50,12 @@ class ESM2Encoder(Encoder):
             add_pooling_layer=False,
         )
 
-        # ── Enable gradient checkpointing ────────────────────────
-        base_model.gradient_checkpointing_enable(
-            gradient_checkpointing_kwargs={"use_reentrant": False}
-        )
+        # Gradient checkpointing trades compute for memory.
+        # Disable on high-VRAM GPUs (GH200 120GB) for ~1.5x speedup.
+        if gradient_checkpointing:
+            base_model.gradient_checkpointing_enable(
+                gradient_checkpointing_kwargs={"use_reentrant": False}
+            )
 
         # ── Attach LoRA adapters ─────────────────────────────────
         lora_config = LoraConfig(
@@ -85,6 +87,11 @@ class ESM2Encoder(Encoder):
     def forward(self, batch: dict[str, torch.Tensor]) -> torch.Tensor:
         """Encode tokenized protein sequences through the QLoRA ESM-2 backbone.
 
+        When a batch contains duplicate protein sequences (common with
+        protein-grouped sampling), ESM-2 is run only on unique sequences
+        and the results are expanded back.  Gradients flow correctly
+        through the indexing operation.
+
         Args:
             batch: Dict with ``input_ids`` and ``attention_mask``,
                 each of shape ``(B, L)``.
@@ -92,14 +99,38 @@ class ESM2Encoder(Encoder):
         Returns:
             Tensor of shape ``(B, output_dim)``.
         """
+        input_ids = batch["input_ids"]
+        attention_mask = batch["attention_mask"]
+
+        # Deduplicate: find unique sequences to skip redundant forward passes
+        unique_ids, inverse = torch.unique(
+            input_ids, dim=0, return_inverse=True
+        )
+        n_unique = unique_ids.shape[0]
+
+        if n_unique < input_ids.shape[0]:
+            # Pick attention mask for first occurrence of each unique seq
+            first_idx = [
+                torch.where(inverse == i)[0][0].item()
+                for i in range(n_unique)
+            ]
+            unique_mask = attention_mask[first_idx]
+            pooled = self._encode(unique_ids, unique_mask)
+            return pooled[inverse]  # expand back to (B, D)
+
+        return self._encode(input_ids, attention_mask)
+
+    def _encode(
+        self, input_ids: torch.Tensor, attention_mask: torch.Tensor
+    ) -> torch.Tensor:
+        """Run ESM-2 backbone + projection on a batch of sequences."""
         outputs = self.model(
-            input_ids=batch["input_ids"],
-            attention_mask=batch["attention_mask"],
+            input_ids=input_ids, attention_mask=attention_mask
         )
 
         # Mean-pool over non-padding tokens
         hidden = outputs.last_hidden_state  # (B, L, H)
-        mask = batch["attention_mask"].unsqueeze(-1).float()  # (B, L, 1)
+        mask = attention_mask.unsqueeze(-1).float()  # (B, L, 1)
         pooled = (hidden * mask).sum(dim=1) / mask.sum(dim=1).clamp(min=1)
 
         # Project to output dim (cast to float32 for projection head)
