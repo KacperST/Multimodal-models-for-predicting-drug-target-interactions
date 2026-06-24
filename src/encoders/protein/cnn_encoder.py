@@ -35,10 +35,10 @@ class ProteinCNNEncoder(Encoder):
     def _conv_block(in_ch: int, out_ch: int, kernel: int) -> nn.Sequential:
         return nn.Sequential(
             nn.Conv1d(in_ch, out_ch, kernel_size=kernel, padding=kernel // 2),
-            nn.GroupNorm(1, out_ch),
+            nn.BatchNorm1d(out_ch),
             nn.ReLU(),
             nn.Conv1d(out_ch, out_ch, kernel_size=kernel, padding=kernel // 2),
-            nn.GroupNorm(1, out_ch),
+            nn.BatchNorm1d(out_ch),
             nn.ReLU(),
         )
 
