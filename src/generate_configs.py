@@ -17,13 +17,13 @@ base_config = {
     },
     "training": {
         "batch_size": 256,
-        "learning_rate": 0.00005,
+        "learning_rate": 1e-4,
         "weight_decay": 0.01,
         "epochs": 100,
-        "patience": 8,
+        "patience": 5,
         "num_workers": 8,
         "device": "auto",
-        "grad_accum_steps": 4
+        "grad_accum_steps": 16
     }
 }
 

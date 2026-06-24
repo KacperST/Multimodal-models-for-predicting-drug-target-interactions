@@ -27,6 +27,8 @@ import torch.nn as nn
 import yaml
 from torch.utils.data import DataLoader
 
+torch._inductor.config.fallback_random = True
+
 from data.loader import load_bindingdb_data
 from data.transform import (
     add_activity_label,
@@ -38,7 +40,6 @@ from data.transform import (
 )
 
 from datasets.dti_dataset import DTIDataset, build_collate_fn
-from datasets.samplers import ProteinGroupedBatchSampler
 from encoders.protein.cnn_encoder import ProteinCNNEncoder
 from encoders.protein.esm2_encoder import ESM2Encoder
 from encoders.smiles.chembert_encoder import ChemBERTEncoder
@@ -312,17 +313,12 @@ def main() -> None:
     batch_size = train_cfg.get("batch_size", 256)
     n_workers = train_cfg.get("num_workers", 4)
 
-    # Use protein-grouped sampling so ESM2's deduplication can skip
-    # redundant forward passes (~3 unique proteins/batch vs ~247).
-    train_sampler = ProteinGroupedBatchSampler(
-        protein_sequences=train_df["Full_Protein_Sequence"].to_list(),
-        batch_size=batch_size,
-        drop_last=True,
-    )
+
     train_loader = DataLoader(
-        train_ds, batch_sampler=train_sampler,
+        train_ds, batch_size=batch_size, shuffle=True,
         collate_fn=collate_fn, num_workers=n_workers,
         pin_memory=True, persistent_workers=(n_workers > 0),
+        drop_last=True,
     )
     val_loader = DataLoader(
         val_ds, batch_size=batch_size, shuffle=False,
@@ -343,7 +339,7 @@ def main() -> None:
     fusion = build_fusion(cfg, total_smiles_dim, total_protein_dim)
     model = MultimodalDTI(smiles_encoders, protein_encoders, fusion)
     print(model)
-    # model = torch.compile(model)    
+    model = torch.compile(model)    
 
     # ── 7. Train ─────────────────────────────────────────────────
     trainable_params = [p for p in model.parameters() if p.requires_grad]
