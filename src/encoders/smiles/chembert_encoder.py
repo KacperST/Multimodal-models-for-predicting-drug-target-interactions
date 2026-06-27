@@ -24,12 +24,18 @@ class ChemBERTEncoder(Encoder):
         self,
         input_dim: int = 768,
         out_dim: int | None = 256,
+        dropout: float = 0.2,
     ) -> None:
         super().__init__()
 
         if out_dim is not None and out_dim != input_dim:
+            hidden_dim = (input_dim + out_dim) // 2
             self.projection = nn.Sequential(
-                nn.Linear(input_dim, out_dim),
+                nn.Linear(input_dim, hidden_dim),
+                nn.LayerNorm(hidden_dim),
+                nn.ReLU(),
+                nn.Dropout(dropout),
+                nn.Linear(hidden_dim, out_dim),
                 nn.LayerNorm(out_dim),
                 nn.ReLU(),
             )

@@ -25,10 +25,12 @@ class MLPFusion(FusionModule):
         dropout: float = 0.3,
     ) -> None:
         super().__init__()
-        if hidden_dims is None:
-            hidden_dims = [256, 64]
-
         combined_dim = smiles_dim + protein_dim
+
+        if hidden_dims is None:
+            # Auto-scale: gradual compression proportional to input size
+            # to avoid aggressive bottlenecks with many modalities
+            hidden_dims = [combined_dim // 2, max(combined_dim // 8, 64)]
         layers: list[nn.Module] = []
 
         in_dim = combined_dim

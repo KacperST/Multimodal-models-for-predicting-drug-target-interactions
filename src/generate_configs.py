@@ -1,6 +1,7 @@
 from pathlib import Path
 import yaml
 import copy
+import itertools
 
 # Base dictionary for default configs
 base_config = {
@@ -15,7 +16,6 @@ base_config = {
     "fusion": {
         "type": "mlp",
         "params": {
-            "hidden_dims": [256, 64],
             "dropout": 0.3
         }
     },
@@ -41,8 +41,6 @@ protein_options = {
     "esm2": {"type": "esm2", "params": {"cache_path": "datasets/esm2_t33_650M_UR50D.pt", "out_dim": 256}}
 }
 
-import itertools
-
 # generate combinations
 smiles_keys = list(smiles_options.keys())
 protein_keys = list(protein_options.keys())
@@ -60,7 +58,7 @@ for i in range(1, len(protein_keys) + 1):
 out_dir = Path("./configs")
 
 import os
-# delete existing config files so we don't have overlapping old variants like gcn_cnn_esm2.yaml if we want to replace them all with systematic names
+# delete existing config files so we don't have overlapping old variants
 for f in os.listdir(out_dir):
     if f.endswith(".yaml"):
         os.remove(out_dir / f)
@@ -71,6 +69,14 @@ for s_combo in smiles_combos:
         
         cfg["smiles_encoders"] = [smiles_options[k] for k in s_combo]
         cfg["protein_encoders"] = [protein_options[k] for k in p_combo]
+        
+        # Scale dropout with model complexity to combat overfitting
+        n_encoders = len(s_combo) + len(p_combo)
+        dropout = 0.3 + 0.05 * max(0, n_encoders - 2)
+        dropout = min(dropout, 0.5)
+        cfg["fusion"]["params"]["dropout"] = round(dropout, 2)
+        # hidden_dims intentionally omitted — MLPFusion auto-scales
+        # based on the combined encoder output dimensions
         
         name = "_".join(s_combo) + "_vs_" + "_".join(p_combo) + ".yaml"
         with open(out_dir / name, "w") as f:
