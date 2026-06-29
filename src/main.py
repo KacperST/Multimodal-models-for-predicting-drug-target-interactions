@@ -208,7 +208,7 @@ def build_fusion(cfg: dict, smiles_dim: int, protein_dim: int):
         return MLPFusion(
             smiles_dim=smiles_dim,
             protein_dim=protein_dim,
-            hidden_dims=params.get("hidden_dims", [256, 64]),
+            hidden_dims=params.get("hidden_dims"),
             dropout=params.get("dropout", 0.3),
         )
     elif fus_type == "cross_attention":

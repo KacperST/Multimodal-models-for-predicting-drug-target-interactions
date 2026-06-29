@@ -68,6 +68,14 @@ for s_combo in smiles_combos:
         cfg["smiles_encoders"] = [smiles_options[k] for k in s_combo]
         cfg["protein_encoders"] = [protein_options[k] for k in p_combo]
         
+        # Scale dropout with model complexity to combat overfitting
+        n_encoders = len(s_combo) + len(p_combo)
+        dropout = 0.3 + 0.05 * max(0, n_encoders - 2)
+        dropout = min(dropout, 0.5)
+        cfg["fusion"]["params"] = {"dropout": round(dropout, 2)}
+        # hidden_dims intentionally omitted — MLPFusion auto-scales
+        # based on the combined encoder output dimensions
+        
         name = "_".join(s_combo) + "_vs_" + "_".join(p_combo) + ".yaml"
         with open(out_dir / name, "w") as f:
             yaml.dump(cfg, f, sort_keys=False)
