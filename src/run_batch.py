@@ -5,7 +5,7 @@ from pathlib import Path
 import sys
 
 def main():
-    configs = sorted(glob.glob("configs/*.yaml"), key=lambda x: x.replace('.', '~'))
+    configs = sorted(glob.glob("configs/*.yaml"), key=lambda x: x.replace('.', '~'))[1:]
     print(f"Znaleziono {len(configs)} plików .yaml w folderze configs/")
     if not configs:
         print("Nie znaleziono plików .yaml w folderze configs/")
