@@ -18,9 +18,10 @@ base_config = {
     "training": {
         "batch_size": 256,
         "learning_rate": 1e-4,
+        "lora_lr": 2e-5,
         "weight_decay": 0.01,
-        "epochs": 100,
-        "patience": 5,
+        "epochs": 30,
+        "patience": 8,
         "num_workers": 8,
         "device": "auto"
     }
@@ -29,12 +30,12 @@ base_config = {
 smiles_options = {
     "gcn": {"type": "gcn", "params": {"hidden_dim": 256, "num_layers": 3}},
     "fp": {"type": "fingerprint_mlp", "params": {"fp_type": "ecfp", "fp_params": {"radius": 2, "fp_size": 1024}, "hidden_dim": 512, "out_dim": 256, "dropout": 0.2}},
-    "chembert": {"type": "chembert", "params": {"model_name": "seyonec/ChemBERTa-zinc-base-v1", "max_length": 256, "out_dim": 256, "lora_r": 16, "lora_alpha": 16, "lora_dropout": 0.05}}
+    "chembert": {"type": "chembert", "params": {"model_name": "seyonec/ChemBERTa-zinc-base-v1", "max_length": 256, "out_dim": 256, "lora_r": 16, "lora_alpha": 16, "lora_dropout": 0.1}}
 }
 
 protein_options = {
     "cnn": {"type": "cnn", "params": {"embed_dim": 256, "num_filters": 128, "kernel_sizes": [3, 7, 15], "max_seq_len": 1000}},
-    "esm2": {"type": "esm2", "params": {"model_name": "facebook/esm2_t33_650M_UR50D", "max_length": 1024, "out_dim": 256, "lora_r": 16, "lora_alpha": 16, "lora_dropout": 0.05}}
+    "esm2": {"type": "esm2", "params": {"model_name": "facebook/esm2_t33_650M_UR50D", "max_length": 1024, "out_dim": 256, "lora_r": 16, "lora_alpha": 16, "lora_dropout": 0.1}}
 }
 
 import itertools
@@ -54,6 +55,7 @@ for i in range(1, len(protein_keys) + 1):
         protein_combos.append(list(combo))
 
 out_dir = Path(__file__).resolve().parent / "configs"
+out_dir.mkdir(parents=True, exist_ok=True)
 
 import os
 # delete existing config files so we don't have overlapping old variants like gcn_cnn_esm2.yaml if we want to replace them all with systematic names

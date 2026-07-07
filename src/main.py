@@ -342,12 +342,35 @@ def main() -> None:
     model = torch.compile(model)    
 
     # ── 7. Train ─────────────────────────────────────────────────
-    trainable_params = [p for p in model.parameters() if p.requires_grad]
-    print(f"Trainable parameters: {sum(p.numel() for p in trainable_params):,}")
+    # Differential learning rates: LoRA adapters need a lower LR to
+    # avoid overfitting the large pretrained backbones (ESM-2 650M,
+    # ChemBERT), while fusion/projection heads can learn faster.
+    base_lr = train_cfg.get("learning_rate", 1e-4)
+    lora_lr = train_cfg.get("lora_lr", 2e-5)
+
+    lora_params, other_params = [], []
+    for name, param in model.named_parameters():
+        if not param.requires_grad:
+            continue
+        if "lora_" in name:
+            lora_params.append(param)
+        else:
+            other_params.append(param)
+
+    n_lora = sum(p.numel() for p in lora_params)
+    n_other = sum(p.numel() for p in other_params)
+    print(f"Trainable parameters: {n_lora + n_other:,} "
+          f"(LoRA: {n_lora:,} @ lr={lora_lr}, other: {n_other:,} @ lr={base_lr})")
+
+    param_groups = []
+    if lora_params:
+        param_groups.append({"params": lora_params, "lr": lora_lr})
+    if other_params:
+        param_groups.append({"params": other_params, "lr": base_lr})
+
     optimizer = torch.optim.AdamW(
-        trainable_params,
-        lr=train_cfg.get("learning_rate", 1e-4),
-        weight_decay=train_cfg.get("weight_decay", 1e-5),
+        param_groups,
+        weight_decay=train_cfg.get("weight_decay", 0.01),
     )
     criterion = nn.BCEWithLogitsLoss()
 

@@ -87,8 +87,9 @@ def main():
         LOGS_DIR.mkdir(exist_ok=True)
         log_file = LOGS_DIR / f"{config_path.stem}.log"
 
+        import sys
         cmd = [
-            "uv", "run", "main.py",
+            sys.executable, "main.py",
             "--config", str(config_path),
         ]
 
