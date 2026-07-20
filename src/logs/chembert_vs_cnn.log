@@ -1,8 +1,0 @@
-Traceback (most recent call last):
-  File "/home/kstankiewicz/DTI/Multimodal-models-for-predicting-drug-target-interactions/src/main.py", line 21, in <module>
-    import torch
-  File "/home/kstankiewicz/DTI/Multimodal-models-for-predicting-drug-target-interactions/.venv/lib/python3.11/site-packages/torch/__init__.py", line 442, in <module>
-    from torch._C import *  # noqa: F403
-    ^^^^^^^^^^^^^^^^^^^^^^
-  File "<frozen importlib._bootstrap>", line 216, in _lock_unlock_module
-KeyboardInterrupt
