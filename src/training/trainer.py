@@ -161,9 +161,13 @@ class Trainer:
                     n for n, p in self.model.named_parameters()
                     if p.requires_grad
                 }
+                buffer_keys = {n for n, _ in self.model.named_buffers()}
+                save_keys = trainable_keys | buffer_keys
                 state = {
-                    k: v for k, v in self.model.state_dict().items()
-                    if k in trainable_keys
+                    # Strip `_orig_mod.` prefix from torch.compile()
+                    k.removeprefix("_orig_mod."): v
+                    for k, v in self.model.state_dict().items()
+                    if k in save_keys
                 }
                 torch.save(state, ckpt_path)
                 print(
@@ -181,9 +185,13 @@ class Trainer:
 
         # Load best checkpoint
         best_ckpt = self.checkpoint_dir / self.checkpoint_filename
-        self.model.load_state_dict(
-            torch.load(best_ckpt, weights_only=True), strict=False
-        )
+        saved_state = torch.load(best_ckpt, weights_only=True)
+        # If model is wrapped by torch.compile(), keys need _orig_mod. prefix
+        if hasattr(self.model, "_orig_mod"):
+            saved_state = {
+                f"_orig_mod.{k}": v for k, v in saved_state.items()
+            }
+        self.model.load_state_dict(saved_state, strict=False)
         return self.model
 
 
