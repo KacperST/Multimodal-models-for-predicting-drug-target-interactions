@@ -14,6 +14,7 @@ Usage::
 import argparse
 import csv
 import os
+import sys
 import subprocess
 from pathlib import Path
 
@@ -75,7 +76,7 @@ def main():
     if not configs:
         print("Nie znaleziono plików .yaml do trenowania!")
         return
-
+    configs = configs[9:]
     print(f"Uruchamiam trening sekwencyjny dla {len(configs)} modeli...")
     print(f"Logi poszczególnych modeli będą zapisywane w folderze logs/")
     print("-" * 60)
@@ -87,7 +88,6 @@ def main():
         LOGS_DIR.mkdir(exist_ok=True)
         log_file = LOGS_DIR / f"{config_path.stem}.log"
 
-        import sys
         cmd = [
             sys.executable, "main.py",
             "--config", str(config_path),

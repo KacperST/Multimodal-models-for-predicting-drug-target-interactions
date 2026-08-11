@@ -28,7 +28,7 @@ import torch.nn as nn
 import yaml
 from torch.utils.data import DataLoader
 
-from data.transform import train_val_test_split
+from data.transform import train_val_test_split_scaffold
 from datasets.dti_dataset import DTIDataset, build_collate_fn
 from main import (  # type: ignore[import-not-found]
     ROOT_DIR,
@@ -40,6 +40,54 @@ from main import (  # type: ignore[import-not-found]
 )
 from processing.smiles.graph_processor import GraphProcessor
 from training.trainer import Trainer
+
+
+def _calibrate_batchnorm(
+    model: nn.Module,
+    loader: DataLoader,
+    device: torch.device,
+    max_batches: int = 50,
+) -> None:
+    """Recalculate BatchNorm running statistics by forwarding training data.
+
+    Existing checkpoints may not contain BatchNorm buffers (running_mean,
+    running_var). This pass resets the statistics to zero and uses a
+    cumulative moving average over *max_batches* to recompute them.
+    """
+    has_bn = any(
+        isinstance(m, (nn.BatchNorm1d, nn.BatchNorm2d, nn.BatchNorm3d))
+        for m in model.modules()
+    )
+    if not has_bn:
+        return
+
+    # Reset and switch to cumulative average for stable estimates
+    for m in model.modules():
+        if isinstance(m, (nn.BatchNorm1d, nn.BatchNorm2d, nn.BatchNorm3d)):
+            m.reset_running_stats()
+            m.momentum = None  # cumulative moving average
+
+    model.train()
+    with torch.no_grad():
+        for i, (smiles_batch, protein_batch, y) in enumerate(loader):
+            if i >= max_batches:
+                break
+            smiles_batch = _to_device(smiles_batch, device)
+            protein_batch = _to_device(protein_batch, device)
+            with torch.autocast(device_type=device.type, dtype=torch.bfloat16):
+                model(smiles_batch, protein_batch)
+    model.eval()
+
+
+def _to_device(obj, device: torch.device):
+    """Recursively move tensors / PyG batches to *device*."""
+    if isinstance(obj, (list, tuple)):
+        return type(obj)(_to_device(item, device) for item in obj)
+    if hasattr(obj, "to"):
+        return obj.to(device, non_blocking=True)
+    if isinstance(obj, dict):
+        return {k: _to_device(v, device) for k, v in obj.items()}
+    return obj
 
 
 def _resolve_path(path_value: str | Path) -> Path:
@@ -175,7 +223,24 @@ def evaluate_one_model(
     total_protein_dim = sum(encoder.output_dim for encoder in protein_encoders)
     fusion = build_fusion(cfg, total_smiles_dim, total_protein_dim)
     model = MultimodalDTI(smiles_encoders, protein_encoders, fusion)
-    model.load_state_dict(torch.load(checkpoint_path, map_location="cpu", weights_only=True))
+    state_dict = torch.load(checkpoint_path, map_location="cpu", weights_only=True)
+    # Strip `_orig_mod.` prefix added by torch.compile() so the checkpoint
+    # can be loaded into an uncompiled model.
+    state_dict = {
+        k.removeprefix("_orig_mod."): v for k, v in state_dict.items()
+    }
+    model.load_state_dict(state_dict, strict=False)
+
+    # Recalibrate BatchNorm running stats (not stored in old checkpoints)
+    model.to(device)
+    train_loader = _build_test_loader(
+        test_df=train_df,
+        smiles_processors=smiles_processors,
+        protein_processors=protein_processors,
+        batch_size=batch_size,
+        num_workers=num_workers,
+    )
+    _calibrate_batchnorm(model, train_loader, device)
 
     optimizer = torch.optim.Adam(
         model.parameters(),
@@ -266,7 +331,7 @@ def main() -> None:
     shared_df = load_data(reference_cfg["data"])
     print(f"Loaded dataset with {shared_df.height} rows")
 
-    split_frames = train_val_test_split(
+    split_frames = train_val_test_split_scaffold(
         shared_df,
         proportions=reference_cfg["data"].get("split_ratios", [0.7, 0.1, 0.2]),
     )
@@ -307,6 +372,13 @@ def main() -> None:
             print(f"  error: {exc}")
 
         results.append(result)
+        if result.get("status") == "ok":
+            print(
+                f"  ✓ AUC={result['auc']:.4f}  AUPRC={result['auprc']:.4f}  "
+                f"F1={result['f1']:.4f}  Prec={result['precision']:.4f}  "
+                f"Rec={result['recall']:.4f}  Loss={result['loss']:.4f}",
+                flush=True,
+            )
 
     results_df = pl.DataFrame(results)
     results_df = results_df.sort("model_name")

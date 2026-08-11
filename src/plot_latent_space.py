@@ -44,9 +44,8 @@ from processing.smiles.graph_processor import GraphProcessor
 # ── Models to visualise ──────────────────────────────────────────────
 
 MODELS_TO_PLOT = [
-    "gcn_vs_cnn",
+    "gcn_chembert_vs_cnn",
     "gcn_fp_chembert_vs_cnn_esm2",
-    "chembert_vs_esm2",
 ]
 
 # ── Helpers ──────────────────────────────────────────────────────────
@@ -76,6 +75,16 @@ def _to_device(obj, device: torch.device):
     if isinstance(obj, dict):
         return {k: _to_device(v, device) for k, v in obj.items()}
     return obj
+
+
+def _load_checkpoint(model: MultimodalDTI, checkpoint_path: Path) -> None:
+    state_dict = torch.load(checkpoint_path, map_location="cpu", weights_only=True)
+    if any(key.startswith("_orig_mod.") for key in state_dict):
+        state_dict = {
+            key.removeprefix("_orig_mod."): value
+            for key, value in state_dict.items()
+        }
+    model.load_state_dict(state_dict, strict=False)
 
 
 # ── Embedding extraction ─────────────────────────────────────────────
@@ -260,9 +269,7 @@ def extract_and_plot(
     total_protein_dim = sum(enc.output_dim for enc in protein_encoders)
     fusion = build_fusion(cfg, total_smiles_dim, total_protein_dim)
     model = MultimodalDTI(smiles_encoders, protein_encoders, fusion)
-    model.load_state_dict(
-        torch.load(checkpoint_path, map_location="cpu", weights_only=True)
-    )
+    _load_checkpoint(model, checkpoint_path)
     model = model.to(device)
 
     embeddings, labels = collect_embeddings(model, test_loader, device)
