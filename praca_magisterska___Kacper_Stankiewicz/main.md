@@ -8,11 +8,10 @@
 
 This chapter reviews computational methods for drug-target interaction
 prediction. Section 2.1 outlines the field's evolution from docking to
-deep learning. Sections 2.2–2.4 describe the main data modalities:
-SMILES, protein sequences, gene expression profiles, and
-physicochemical descriptors. Section 2.5 surveys representative model
-architectures, and Section 2.6 introduces the cold-start evaluation
-protocol.
+deep learning. Sections 2.2--2.4 describe the main data modalities:
+SMILES, protein sequences, gene expression profiles, and physicochemical
+descriptors. Section 2.5 surveys representative model architectures, and
+Section 2.6 introduces the cold-start evaluation protocol.
 
 ## Evolution of DTI Prediction Methods
 
@@ -143,12 +142,12 @@ in only a slight decrease in prediction accuracy. However, the exclusion
 of the GCN (for drug features) or the convolutional networks (for
 protein features) led to a significant drop in performance, decreasing
 the accuracy by as much as 18 percentage points in certain tests. These
-results suggest that, at least for the GPCR targets studied by
-MFD-GDrug, local features of proteins and drugs are more critical for
-successful prediction than global dependencies. It should be noted,
-however, that ablation (removing a module from a jointly trained model)
-is not the same as comparing standalone encoders, since the remaining
-components may compensate for the removed one.
+results suggest that local features of proteins and drugs are more
+critical for successful prediction than global dependencies (at least
+for the GPCR targets studied by MFD-GDrug). It should be noted, however,
+that ablation (removing a module from a jointly trained model) is not
+the same as comparing standalone encoders since the remaining components
+may compensate for the removed one.
 
 #### MCL-DTI
 
@@ -231,8 +230,8 @@ low time and memory resources required for its training.
 
 The *cold-start problem* in DTI refers to an evaluation protocol in
 which the test set contains drugs (unseen-drug), proteins
-(unseen-target), or both (unseen-both) that are entirely absent from
-the training set. Under such conditions, models that have memorized
+(unseen-target), or both (unseen-both) that are entirely absent from the
+training set. Under such conditions, models that have memorized
 per-entity statistics fail to generalize, and performance typically
 degrades compared to standard random or scaffold-based splits.
 Consequently, the ability to generalize in cold-start scenarios has
@@ -263,11 +262,10 @@ DTIAM has two training phases:
     specific functional groups within the molecule.
 
   The output of the neural network consists of trained embeddings that
-  represent knowledge of the compound's properties.
-
-  On the other hand, protein sequences are processed into individual
-  residues. Another transformer based on ESM-2 learns protein
-  properties with the help of two autonomous tasks:
+  represent knowledge of the compound's properties. On the other hand,
+  protein sequences are processed into individual residues. Another
+  transformer based on ESM-2 learns protein properties with the help of
+  two autonomous tasks:
 
   - Masked Language Modeling (MLM)
 
@@ -331,24 +329,24 @@ the following components:
 
 Authors of KEPLA report that this knowledge-enhanced approach achieves
 state-of-the-art results on two benchmark datasets. Furthermore, a key
-advantage of KEPLA is its interpretability; by leveraging the attention
+advantage of KEPLA is its interpretability. By leveraging the attention
 weights and Knowledge Graph relations, the model can explicitly
 highlight which chemical substructures and biological functions
 contribute most to the predicted binding affinity.
 
 # Methods and Multi-modal Model Architectures
 
-This chapter describes the data preparation pipeline, the baseline
-and advanced encoder architectures, and the fusion strategies used
-for predicting drug-target interactions.
+This chapter describes the data preparation pipeline, exploratory
+dataset analysis, the baseline and advanced encoder architectures, and
+the fusion strategies used for predicting drug-target interactions.
 
 ## Data and Dataset Preparation
 
-This section details the first step of the pipeline: transforming
-raw chemical and biological records into a curated,
-machine-learning-ready dataset. It outlines the primary data
-acquisition, filtering procedures, binarization of the target
-metric, and the partitioning strategy used for model evaluation.
+This section details the first step of the pipeline: transforming raw
+chemical and biological records into a curated, machine-learning-ready
+dataset. It outlines the primary data acquisition, filtering procedures,
+binarization of the target metric, and the partitioning strategy used
+for model evaluation.
 
 ### Dataset Description
 
@@ -357,10 +355,10 @@ BindingDB[^1] - a public and comprehensive database of measured binding
 affinities focusing on the interactions of proteins with drug-like
 molecules. The data were collected using a variety of measurement
 techniques, including enzyme inhibition and kinetics, isothermal
-titration calorimetry, and NMR. It contains about 3,187,250 binding data
+titration calorimetry, and NMR. It contains 3,187,250 binding data
 points for 11,417 proteins and over 1,404,415 drug-like molecules. The
-dataset contains more than 50 columns; however, only a specific subset
-of features is relevant for the proposed predictive modeling:
+dataset contains more than 50 columns, however only a specific subset of
+features is relevant for the proposed predictive modeling:
 
 - **Ligand SMILES** -- the chemical structure of a drug-like molecule
   represented in the 1D SMILES format (as described in the previous
@@ -370,11 +368,11 @@ of features is relevant for the proposed predictive modeling:
   target protein. In multi-modal learning, this continuous string of
   amino acids acts as the raw biological input for the protein encoder.
 
-- **$K_i$ (nM)** -- the inhibition constant, representing the
-  dissociation constant of the inhibitor-target complex as determined
-  from inhibition kinetics. Lower $K_i$ values indicate higher binding
-  affinity (i.e., a stronger interaction between the drug and the
-  target).
+- **$K_i$ (nM)** -- the inhibition constant, which indicates how
+  strongly a molecule binds to and blocks target receptors. It
+  represents the exact concentration needed to fill 50% of the target
+  sites. Lower $K_i$ values indicate higher binding affinity (i.e., a
+  stronger interaction between the drug and the target).
 
 In the original database, the target is distributed between multiple
 columns, each column representing one piece of the protein chain. For
@@ -384,8 +382,8 @@ were selected.
 ### Data Preprocessing
 
 A significant portion of the raw dataset contained missing data.
-Specifically, over 2 million records (almost 80%) did not have a defined
-$K_i$ value. These records were excluded from the study, as the
+Specifically, over 2.5 million records (around 82%) did not have a
+defined $K_i$ value. These records were excluded from the study, as the
 remaining 600,000 drug-target pairs provided an adequate sample size for
 the experiments. The original dataset wasn't standardized because it was
 compiled from various sources. Multiple records had $K_i$ values set as
@@ -408,18 +406,17 @@ A small subset of protein sequences included non-standard amino acid
 characters, such as 'X', representing undefined residues. These records
 were also removed.
 
-Following these filtering steps, the cleaned dataset comprised
-roughly 450,000 high-quality records. Since this study treats
-interaction prediction as a binary classification task, a formal
-activity threshold is needed to define binding affinity. In the dataset,
-raw $K_i$ values range from near-zero (indicating extremely high
-affinity) to values as large as $4 \times 10^9$ nM (indicating
-practically no affinity). To address this vast scale, the inhibition
-constants were logarithmically transformed into $pK_i$ values
-($pK_i = 9 - \log_{10}(K_i)$). An activity threshold was established at
-$pK_i \ge 7.0$ (equivalent to $K_i \le 100$ nM), effectively binarizing
-the dataset into active and inactive drug-target pairs for the
-subsequent experiments.
+Following these filtering steps, the cleaned dataset comprised roughly
+450,000 high-quality records. Since this study treats interaction
+prediction as a binary classification task, a formal activity threshold
+is needed to define binding affinity. In the dataset, raw $K_i$ values
+range from near-zero (indicating extremely high affinity) to values as
+large as $4 \times 10^9$ nM (indicating practically no affinity). To
+address this vast scale, the inhibition constants were logarithmically
+transformed into $pK_i$ values ($pK_i = 9 - \log_{10}(K_i)$). An
+activity threshold was established at $pK_i \ge 7.0$ (equivalent to
+$K_i \le 100$ nM), effectively binarizing the dataset into active and
+inactive drug-target pairs for the subsequent experiments.
 
 ## Train, validation and test data split
 
@@ -462,12 +459,11 @@ Drug-Target Interaction dataset.
 
 The final dataset consists of 451,858 interaction pairs, comprising
 236,379 unique small-molecule drugs and 3,580 unique protein targets.
-The interaction classes are well-balanced, containing
-216,933 active (True) and 234,925 inactive (False) samples. This
-near-even split ensures that the machine learning models will not
-develop a strong prior toward a majority class during the training
-phase, which is a common issue in heavily imbalanced biomedical
-datasets.
+The interaction classes are well-balanced, containing 216,933 active
+(True) and 234,925 inactive (False) samples. This near-even split
+ensures that the machine learning models will not develop a strong prior
+toward a majority class during the training phase, which is a common
+issue in heavily imbalanced biomedical datasets.
 
 ### Sparsity of the Interaction Matrix
 
@@ -477,11 +473,11 @@ vast and mostly empty. This phenomenon is accurately reflected in our
 dataset. Given the unique counts of drugs and proteins, the theoretical
 maximum number of interaction pairs is approximately 846.2 million
 ($236,379 \times 3,580$). The 451,858 confirmed pairs cover merely
-$\sim$`<!-- -->`{=html}0.053% of this theoretical space. This
-sparsity highlights the importance of employing deep learning
-models capable of generalizing hidden physicochemical interaction rules,
-as exhaustive experimental testing of the entire interaction matrix is
-physically and economically impossible.
+$\sim$`<!-- -->`{=html}0.053% of this theoretical space. This sparsity
+highlights the importance of employing deep learning models capable of
+generalizing hidden physicochemical interaction rules, as exhaustive
+experimental testing of the entire interaction matrix is physically and
+economically impossible.
 
 ### Sequence Length Distributions and Truncation Limits
 
@@ -548,9 +544,10 @@ plotted conditionally based on the interaction class (Figure
 [3.3](#fig:length_by_class){reference-type="ref"
 reference="fig:length_by_class"}). The density plots for active
 compounds (green) and inactive compounds (red) are nearly perfectly
-aligned for both ligands and protein targets. This is consistent with the absence of length bias, suggesting that the
-multimodal architectures must discover genuine biochemical binding motifs
-to achieve high accuracy.
+aligned for both ligands and protein targets. This is consistent with
+the absence of length bias, suggesting that the multimodal architectures
+must discover genuine biochemical binding motifs to achieve high
+accuracy.
 
 ### Target Activity Distribution
 
@@ -661,9 +658,8 @@ the standard 20 amino acids remain highly consistent across both
 categories. This verification ensures that specific protein types, such
 as cysteine-rich or highly hydrophobic proteins, are not
 disproportionately overrepresented in a single class. The minimal
-percentage point differences between the groups suggest that the
-dataset curation did not introduce a target-level
-composition bias.
+percentage point differences between the groups suggest that the dataset
+curation did not introduce a target-level composition bias.
 
 ## Baseline Model Implementation
 
@@ -736,16 +732,16 @@ approach empowers the network's ability to recognize local patterns
 between amino-acids as well as broader structures. Each convolutional
 block consists of two one-dimensional convolutional layers. After each
 convolutional layer, batch normalization layers are used to stabilize
-the training and reduce internal covariate shift. The
-activation function (ReLU) is used to introduce non-linearity to the
-model. Since the input sequences are padded to a fixed-length of 1000
-tokens, traditional pooling methods like average-pooling could be
-negatively affected by artificial zero padding values. To mitigate this
-problem, a max pooling layer is applied. This method converts zero
-padding values with $-inf$ values to ensure only valid amino-acids
-contribute to feature extraction. Finally, the outputs of each pooling
-layer are concatenated. This results in a robust 384-dimensional vector
-that captures essential biological properties of the target protein.
+the training and reduce internal covariate shift. The activation
+function (ReLU) is used to introduce non-linearity to the model. Since
+the input sequences are padded to a fixed-length of 1000 tokens,
+traditional pooling methods like average-pooling could be negatively
+affected by artificial zero padding values. To mitigate this problem, a
+max pooling layer is applied. This method converts zero padding values
+with $-inf$ values to ensure only valid amino-acids contribute to
+feature extraction. Finally, the outputs of each pooling layer are
+concatenated. This results in a robust 384-dimensional vector that
+captures essential biological properties of the target protein.
 
 ## Multi-modal Models Utilizing Advanced Descriptors
 
@@ -764,12 +760,12 @@ highly efficient, and historically established method for representing
 chemical properties. Fingerprints encode the presence or absence of
 specific substructures within a molecule into a fixed-length bit array.
 
-For this study, Extended-Connectivity Fingerprints (ECFP), a variant
-of Morgan circular fingerprints, were generated using
-the `scikit-fingerprints`[^3] library. The algorithm systematically
-analyzes the chemical environment around each atom up to a specified
-radius. Based on the experimental configuration, a radius of 2 was
-applied (capturing atom environments up to two bonds away), and the extracted
+For this study, Extended-Connectivity Fingerprints (ECFP), a variant of
+Morgan circular fingerprints, were generated using the
+`scikit-fingerprints`[^3] library. The algorithm systematically analyzes
+the chemical environment around each atom up to a specified radius.
+Based on the experimental configuration, a radius of 2 was applied
+(capturing interactions up to two bonds away), and the extracted
 substructures were hashed into a discrete vector of 1024 dimensions.
 
 <figure id="fig:fp_architektura" data-latex-placement="H">
@@ -788,15 +784,15 @@ into a dense, continuous representation.
 While Convolutional Neural Networks excel at extracting local
 dependencies between adjacent amino acids, they often struggle to
 capture the global context of a sequence. To address this, Evolutionary
-Scale Modeling (specifically ESM-2), a state-of-the-art transformer-based
-protein language model, was utilized to capture long-range relationships
-and complex structural patterns.
+Scale Modeling (specifically ESM-2), a state-of-the-art
+transformer-based protein language model, was utilized to capture
+long-range relationships and complex structural patterns.
 
 Given the model's immense scale (650 million parameters) and a chosen
-maximum input length of 1024 tokens, full fine-tuning is highly
-computationally intensive, even when utilizing high-performance hardware
-such as NVIDIA GH200 accelerators. Therefore, the research employed two
-distinct strategies to leverage ESM-2 efficiently.
+maximum input length of 1024 tokens, full fine-tuning is computationally
+intensive, even when utilizing high-performance hardware such as NVIDIA
+GH200 accelerators. Therefore, the research employed two distinct
+strategies to leverage ESM-2 efficiently.
 
 First, all protein sequences were tokenized using the model's native
 tokenizer. In the initial phase of the experiments, a feature extraction
@@ -971,7 +967,7 @@ the DTI task without the substantial memory and computational cost of
 fine-tuning the entire network.
 
 However, training attention mechanisms and fine-tuning large
-transformers still requires significant computing power. Therefore, this
+transformers still require significant computing power. Therefore, this
 second phase was structured as an experimental funnel. The
 Cross-Attention and LoRA experiments were restricted to only the top ten
 models from Phase 1. This ensured that the most advanced, resource-heavy
@@ -1012,7 +1008,7 @@ further lowered it to 0.8826. This suggests that, without an advanced
 attention mechanism, the MLP fusion module struggles to extract a
 unified signal from an overly wide concatenated vector, possibly due to
 feature redundancy, increased optimization difficulty, and the stronger
-regularization applied to models with more encoders (see §3.5.4).
+regularization applied to models with more encoders.
 
 In the context of real-world drug discovery, particularly during
 early-stage virtual screening where the testing budget is less
@@ -1027,32 +1023,25 @@ When looking at the results from this perspective, the
 achieves the highest recall in the entire experiment (0.8220), meaning
 it successfully identifies over 82% of all actual active interactions.
 By utilizing both the local patterns from the CNN and the global
-evolutionary context from ESM-2, the model provides broad coverage
-of potential candidates.
-
-It should be noted, however, that the precision and recall values
-reported here are measured at the default classification threshold of
-0.5. Since the models differ in calibration (as indicated by the
-varying loss values in Table 4.1), these P/R differences partly reflect
-calibration rather than intrinsic architectural properties. Each model
-can be moved along its own ROC curve to any desired recall level.
+evolutionary context from ESM-2, the model provides broad coverage of
+potential candidates.
 
 On the opposite end of the spectrum, models heavily reliant on molecular
-fingerprints exhibit a different trade-off. For example, the
-`fp_chembert_and_esm2` model achieves the highest Precision (0.8569),
+fingerprints act completely differently. For example, the
+`fp_chembert_and_esm2` model boasts the highest Precision (0.8569),
 meaning it is highly confident in its positive predictions. However, its
 Recall drops to 0.6749. This makes the model conservative: it minimizes
-false alarms, but misses about a third of all valid drug-target pairs.
+false alarms but misses about a third of all valid drug-target pairs.
 
 A separate comparison was conducted to evaluate the impact of the
 biological representations, specifically contrasting the lightweight
-1D-CNN with the large, pre-trained ESM-2 transformer. As demonstrated
-in Table [4.1](#tab:cnn_and_esm2){reference-type="ref"
+1D-CNN with the large, pre-trained ESM-2 transformer. As demonstrated in
+Table [4.1](#tab:cnn_and_esm2){reference-type="ref"
 reference="tab:cnn_and_esm2"}, across identical chemical encoders, the
-CNN architecture consistently outperforms ESM-2 in terms
-of AUC (the advantage holds for all seven drug-encoder groups). For
-F1-Score, the pattern is similar with one exception: with Fingerprint
-as the sole drug encoder, ESM-2 yields a higher F1 (0.7873 vs 0.7738).
+CNN architecture consistently outperforms ESM-2 in terms of AUC (the
+advantage holds for all seven drug-encoder groups). For F1-Score, the
+pattern is similar, with one exception: with Fingerprint as the sole
+drug encoder, ESM-2 yields a higher F1 (0.7873 vs 0.7738).
 
 This result highlights a critical biological intuition: the occurrence
 of a drug-target interaction is often dictated by highly localized
@@ -1060,11 +1049,10 @@ binding pockets and short amino acid motifs rather than the global 3D
 folding structure of the entire protein. While ESM-2 is designed to
 capture far-reaching evolutionary dependencies, the local convolutions
 of the CNN appear to be much more efficient at extracting the specific,
-localized patterns relevant to binding affinity. Furthermore, the
-large size of the ESM-2 embeddings may introduce excessive noise
-during the simple MLP concatenation phase, whereas the compact features
-generated by the CNN integrate much more smoothly with the drug
-representations.
+localized patterns relevant to binding affinity. Furthermore, the large
+size of the ESM-2 embeddings may introduce excessive noise during the
+simple MLP concatenation phase, whereas the compact features generated
+by the CNN integrate much more smoothly with the drug representations.
 
 ::: {#tab:cnn_and_esm2}
 +-------------------+------------------------+-------------------------+
@@ -1170,10 +1158,10 @@ reference="fig:worst_model"} shows why models using only pre-trained
 language models (without graph structures) perform poorly. The t-SNE
 plot for `chembert_and_esm2` (Figure
 [4.3](#fig:worst_model){reference-type="ref"
-reference="fig:worst_model"}d) displays a considerable overlap between the
-two classes. This suggests that processing molecules and proteins only as
-1D text sequences is not enough to accurately predict physical binding.
-As a result, the Precision-Recall curve (Figure
+reference="fig:worst_model"}d) displays a considerable overlap between
+the two classes. This proves that processing molecules and proteins only
+as 1D text sequences is not enough to accurately predict physical
+binding. As a result, the Precision-Recall curve (Figure
 [4.3](#fig:worst_model){reference-type="ref"
 reference="fig:worst_model"}b) is noticeably lower, and the Confusion
 Matrix (Figure [4.3](#fig:worst_model){reference-type="ref"
@@ -1217,32 +1205,35 @@ biological and chemical patterns.
 ## Phase 2 Results
 
 In Phase 2, the simple MLP fusion was replaced with a Cross-Attention
-mechanism to combine the drug and protein encoders. Despite high
-expectations, the cross-attention approach did not improve the overall
-predictive performance. In fact, it slightly degraded the results. Table
+mechanism. However, this approach did not improve the results. As shown
+in Table
 [\[tab:phase1_vs_phase2\]](#tab:phase1_vs_phase2){reference-type="ref"
-reference="tab:phase1_vs_phase2"} directly compares the 10
-trained architectures across both phases. As shown, the cross-attention
-models scored about 1 percentage point lower in AUC compared to their
-MLP counterparts.
+reference="tab:phase1_vs_phase2"}, the cross-attention models scored
+about 1
 
-It is important to note that Phase 2 changed three variables
-simultaneously relative to Phase 1: (a) the MLP was replaced with
-cross-attention, (b) LoRA fine-tuning was enabled for ChemBERTa and
-ESM-2, and (c) the inference switched from cached embeddings to a live
-forward pass. Consequently, the observed AUC difference cannot be
-attributed solely to the cross-attention mechanism.
+It is important to note that Phase 2 introduced three changes at the
+same time:
+
+- The MLP was replaced with a cross-attention module,
+
+- LoRA fine-tuning was enabled for the ChemBERTa and ESM-2 encoders,
+
+- The training switched from cached embeddings to dynamic forward
+  passes.
+
+Because of these multiple changes, the drop in performance cannot be
+blamed on the cross-attention mechanism alone.
 
 There are a few logical reasons for this overall performance drop.
 First, attention mechanisms have significantly more parameters than
 simple MLPs. This makes them much harder to train and more prone to
 overfitting on the training data. Second, cross-attention is generally
 designed for processing detailed, element-by-element sequences (like
-translating words in a sentence). In the present architecture, the module tries
-to align highly compressed global vectors (like Fingerprints or pooled
-GCN features). Without raw, uncompressed sequences to map, the attention
-mechanism cannot use its full potential and might act more like an
-unnecessary noise filter.
+translating words in a sentence). In the present architecture, the
+module tries to align highly compressed global vectors (like
+Fingerprints or pooled GCN features). Without raw, uncompressed
+sequences to map, the attention mechanism cannot use its full potential
+and might act more like an unnecessary noise filter.
 
 However, a closer look at the rankings reveals a very interesting shift.
 In Phase 1, the simple MLP model struggled to process too many features
@@ -1252,7 +1243,7 @@ first place.
 
 This suggests that while Cross-Attention may introduce excessive
 overhead for simple encoder combinations, it is better suited than MLP
-at filtering and merging information from multiple complex sources.
+for filtering and merging information from multiple complex sources.
 
 In terms of specific metrics for Phase 2, the
 `gcn_fp_chembert_and_cnn_esm2` model achieved the highest Recall
@@ -1271,16 +1262,15 @@ cross-attention architectures. Figure
 reference="fig:phase2_best_model"} presents the performance of the best
 Phase 2 architecture (`gcn_chembert_and_cnn`). The t-SNE projection
 (Figure [4.4](#fig:phase2_best_model){reference-type="ref"
-reference="fig:phase2_best_model"}d) demonstrates a clear
-separation between the active and inactive classes. The
-cross-attention mechanism aligned the 2D structural graph
-signals with the 1D contextual language embeddings, achieving high
-Recall. However, as seen in the
+reference="fig:phase2_best_model"}d) demonstrates a clear separation
+between the active and inactive classes. The cross-attention mechanism
+aligned the 2D structural graph signals with the 1D contextual language
+embeddings, achieving high Recall. However, as seen in the in the
 Confusion Matrix (Figure
 [4.4](#fig:phase2_best_model){reference-type="ref"
-reference="fig:phase2_best_model"}c), this higher recall
-resulted in 9,959 False Positives, causing a slight drop in
-overall Precision compared to the Phase 1 baseline.
+reference="fig:phase2_best_model"}c), this higher recall resulted in
+9,959 False Positives, causing a slight drop in overall Precision
+compared to the Phase 1 baseline.
 
 <figure id="fig:phase2_best_model" data-latex-placement="H">
 <figure>
@@ -1313,13 +1303,13 @@ physicochemical fingerprints will naturally yield a superior model.
 However, when forced to align five distinct encoders simultaneously, the
 latent space (Figure [4.5](#fig:phase2_overloaded){reference-type="ref"
 reference="fig:phase2_overloaded"}d) collapses into a noisy, entangled
-cluster. The increased number of encoder outputs competing for
-attention impairs the module's ability to establish a
-robust decision boundary. Consequently, the Confusion Matrix (Figure
+cluster. The increased number of encoder outputs competing for attention
+impairs the module's ability to establish a robust decision boundary.
+Consequently, the Confusion Matrix (Figure
 [4.5](#fig:phase2_overloaded){reference-type="ref"
-reference="fig:phase2_overloaded"}c) shows the highest number of
-False Positives among Phase 2 models (10,447). While the model manages
-to catch many true interactions, the precision degradation is evident in
+reference="fig:phase2_overloaded"}c) shows the highest number of False
+Positives among Phase 2 models (10,447). While the model manages to
+catch many true interactions, the precision degradation is evident in
 the Precision-Recall curve (Figure
 [4.5](#fig:phase2_overloaded){reference-type="ref"
 reference="fig:phase2_overloaded"}b), yielding a lower AUPRC of 0.8707.
@@ -1350,13 +1340,13 @@ compensate for excessive informational noise.
 ## Comparative Error Analysis and Molecular Diagnostics {#sec:error_analysis}
 
 To fully understand the practical differences and underlying mechanics
-of the developed architectures, a comparative error
-analysis was performed. The evaluation contrasts the best baseline
-fusion model (`gcn_and_cnn`) with the best cross-attention model
+of the developed architectures, a comparative error analysis was
+performed. The evaluation contrasts the best baseline fusion model
+(`gcn_and_cnn`) with the best cross-attention model
 (`gcn_chembert_and_cnn`). By dissecting the predictions into True
-Positives, True Negatives, False Positives, and False Negatives, it is possible to
-analyze how specific molecular properties and probability distributions
-influence the models' behavior.
+Positives, True Negatives, False Positives, and False Negatives, it is
+possible to analyze how specific molecular properties and probability
+distributions influence the models' behavior.
 
 ### Prediction Distribution and Model Overconfidence
 
@@ -1385,21 +1375,21 @@ nearly 1,000 more True Positives (36,950 compared to the baseline's
 35,994) and visibly reduced the number of missed interactions, with
 False Negatives dropping from 8,786 to 7,830. In a practical drug
 discovery scenario, this indicates that the cross-attention model
-achieves a higher Recall, identifying more potential
-therapeutic candidates.
+achieves a higher Recall, identifying more potential therapeutic
+candidates.
 
-However, this increased sensitivity came at a cost to overall
-Precision. The number of False Positives surged from 8,289 in Phase 1 to
-9,959 in Phase 2. More critically, the False Positive distribution for
-the Phase 2 model displays a pronounced spike at the extreme right edge
-of the plot (probability close to 1.0). The mean predicted probability
-for these false alarms increased from 0.734 to 0.764. This pattern
-highlights a vulnerability: the Cross-Attention model suffers from
-overconfidence. The additional contextual features from ChemBERTa appear
-to have introduced noise that led the attention mechanism to
-confidently misclassify thousands of inactive pairs. In contrast, the
-MLP fusion utilized in Phase 1 proved to be more
-stable and resistant to such confident failures.
+However, this increased sensitivity came at a cost to overall Precision.
+The number of False Positives surged from 8,289 in Phase 1 to 9,959 in
+Phase 2. More critically, the False Positive distribution for the Phase
+2 model displays a spike at the extreme right edge of the plot
+(probability close to 1.0). The mean predicted probability for these
+false alarms increased from 0.734 to 0.764. This pattern highlights a
+vulnerability: the Cross-Attention model suffers from overconfidence.
+The additional contextual features from ChemBERTa appear to have
+introduced noise that led the attention mechanism to confidently
+misclassify thousands of inactive pairs. In contrast, the MLP fusion
+utilized in Phase 1 proved to be more stable and resistant to such
+confident failures.
 
 ### Class Separation and Learned Chemical Representations
 
@@ -1429,16 +1419,18 @@ Heavy Atom Count (`HeavyAtomCount`), the True Positive distributions are
 consistently shifted to the right. Furthermore, for chemical complexity
 metrics like the number of rings (`NumRings`), the True Negative class
 dominates at lower values (0-2 rings), whereas the True Positive class
-strongly peaks at higher values (3-5 rings). This is consistent with the
-observation from §3.3.8 that active compounds tend to have more aromatic
-rings than inactive ones (3 vs 2 on average). However, this shift may
-also reflect the models exploiting a size-related shortcut present in
-the label distribution, rather than learning a deep biochemical
-principle. To distinguish genuine generalization from shortcut learning,
-one would need to compare the distributions of True Positives versus
-False Positives (rather than True Positives versus True Negatives): if
-False Positives are similarly shifted toward larger molecules, it would
-confirm that the model relies on a size heuristic.
+strongly peaks at higher values (3-5 rings), which is consistent with
+the observation from §3.3.8 that active compounds tend to be
+structurally more complex. A common risk in such imbalanced feature
+distributions is shortcut learning, where the model might simply equate
+larger molecular size with activity. However, comparing the
+distributions of True Positives versus False Positives confirms that
+this is not the case. The model successfully avoids this heuristic: it
+correctly identifies large inactive molecules as True Negatives (visible
+at 3-4 rings) rather than misclassifying them as False Positives. This
+proves that the networks did not merely memorize a size-related bias,
+but genuinely learned deep biochemical principles differentiating active
+targets from decoys.
 
 ### Dominance of the GCN Encoder and Structural Bottlenecks
 
@@ -1461,17 +1453,16 @@ signal-propagation bottlenecks inherent to the GCN itself.
 ### Aromaticity Bias
 
 When analyzing the number of aromatic rings, both models exhibit a
-shared pattern. The architectures demonstrate
-significantly higher accuracy when evaluating complex molecules
-containing 3 or more aromatic rings, heavily dominated by True
-Positives. Conversely, simpler molecules with 0 to 2 rings generate a
-disproportionately high ratio of false predictions. As noted in §3.3.8,
-active compounds in the dataset tend to contain more aromatic rings
-than inactive ones, so the models may be exploiting this correlation
-rather than learning a deeper structural principle. This indicates that
-the models perform well on rigid, drug-like compounds, but frequently
-fail to capture sufficient distinguishing features in smaller, simpler
-chemical structures.
+shared pattern. The architectures demonstrate significantly higher
+accuracy when evaluating complex molecules containing 3 or more aromatic
+rings, heavily dominated by True Positives. Conversely, simpler
+molecules with 0 to 2 rings generate a disproportionately high ratio of
+false predictions. As noted in §3.3.8, active compounds in the dataset
+tend to contain more aromatic rings than inactive ones, so the models
+may be exploiting this correlation rather than learning a deeper
+structural principle. This indicates that the models perform well on
+rigid, drug-like compounds, but frequently fail to capture sufficient
+distinguishing features in smaller, simpler chemical structures.
 
 ### Protein Length Resilience
 
@@ -1479,12 +1470,11 @@ In contrast to the ligand-side vulnerabilities, the distribution of
 errors related to the protein sequence length closely follows the
 distribution of correct predictions across both architectures. The
 overlaid density plots show no significant deviation regardless of the
-fusion strategy applied. This provides empirical evidence that
-the local 1D-CNN protein encoder is robust against
-variations in target size. It further supports the
-intuition that drug-target affinity is primarily governed by
-localized sequence motifs and specific binding pockets, rather than by
-the global length of the protein chain.
+fusion strategy applied. This provides empirical evidence that the local
+1D-CNN protein encoder is robust against variations in target size. It
+further supports the intuition that drug-target affinity is primarily
+governed by highly localized sequence motifs and specific binding
+pockets, rather than by the global length of the protein chain.
 
 # Summary and Conclusions
 
