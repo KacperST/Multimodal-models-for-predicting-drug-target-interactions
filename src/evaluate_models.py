@@ -250,9 +250,29 @@ def main() -> None:
     args = parser.parse_args()
 
     configs_dir = _resolve_path(args.configs_dir)
-    checkpoints_dir = _resolve_path(args.checkpoints_dir)
-    output_csv = _resolve_path(args.output_csv)
-    output_plot = _resolve_path(args.output_plot)
+    
+    # Auto-adjust defaults based on configs_dir if it's a subfolder like 'configs/lincs'
+    rel_path = ""
+    if "configs" in configs_dir.parts:
+        try:
+            rel_path = configs_dir.relative_to(ROOT_DIR / "configs")
+        except ValueError:
+            pass
+
+    if args.checkpoints_dir == str(ROOT_DIR / "checkpoints") and rel_path:
+        checkpoints_dir = ROOT_DIR / "checkpoints" / rel_path
+    else:
+        checkpoints_dir = _resolve_path(args.checkpoints_dir)
+
+    if args.output_csv == str(ROOT_DIR / "logs" / "model_comparison.csv") and rel_path:
+        output_csv = ROOT_DIR / "logs" / rel_path / "model_comparison.csv"
+    else:
+        output_csv = _resolve_path(args.output_csv)
+
+    if args.output_plot == str(ROOT_DIR / "logs" / "model_comparison.png") and rel_path:
+        output_plot = ROOT_DIR / "logs" / rel_path / "model_comparison.png"
+    else:
+        output_plot = _resolve_path(args.output_plot)
 
     config_paths = sorted(configs_dir.glob("*.yaml"))
     if args.limit is not None:
@@ -334,14 +354,14 @@ def main() -> None:
     if "status" in results_df.columns:
         ok_df = results_df.filter(pl.col("status") == "ok")
         if not ok_df.is_empty():
-            print("\nTop models by F1 score:")
+            print("\nTop models by AUC score:")
             print(
-                ok_df.sort("f1", descending=True).select(
+                ok_df.sort("auc", descending=True).select(
                     ["model_name", "auc", "auprc", "f1", "precision", "recall", "n_test"]
                 )
             )
     output_csv.parent.mkdir(parents=True, exist_ok=True)
-    results_df.sort("f1", descending=True).select(["model_name", "auc", "auprc", "f1", "precision", "recall","loss"]).write_csv(output_csv)
+    results_df.sort("auc", descending=True).select(["model_name", "auc", "auprc", "f1", "precision", "recall","loss"]).write_csv(output_csv)
     print(f"\nSaved comparison table to {output_csv}")
 
     _plot_results(results_df, output_plot)

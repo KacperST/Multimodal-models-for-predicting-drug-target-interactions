@@ -5,7 +5,7 @@ import copy
 # Base dictionary for default configs
 base_config = {
     "data": {
-        "clean_path": "datasets/clean.parquet",
+        "clean_path": "datasets/lincs_balanced.parquet",
         "path": "datasets/BindingDB_All.tsv",
         "pki_threshold": 7.0,
         "split_ratios": [0.7, 0.1, 0.2]
@@ -15,13 +15,13 @@ base_config = {
     "fusion": {
         "type": "mlp",
         "params": {
-            "hidden_dims": [256, 64],
-            "dropout": 0.3
+            "hidden_dims": [128, 32],
+            "dropout": 0.5
         }
     },
     "training": {
-        "batch_size": 512,
-        "learning_rate": 3e-4,
+        "batch_size": 128,
+        "learning_rate": 0.00005,
         "weight_decay": 1e-5,
         "epochs": 150,
         "patience": 10,
@@ -31,14 +31,15 @@ base_config = {
 }
 
 smiles_options = {
-    "gcn": {"type": "gcn", "params": {"hidden_dim": 256, "num_layers": 3}},
-    "fp": {"type": "fingerprint_mlp", "params": {"fp_type": "ecfp", "fp_params": {"radius": 2, "fp_size": 1024}, "hidden_dim": 512, "out_dim": 256, "dropout": 0.2}},
-    "chembert": {"type": "chembert", "params": {"cache_path": "datasets/ChemBERTa-zinc-base-v1.pt", "out_dim": 256}}
+    "gcn": {"type": "gcn", "params": {"hidden_dim": 128, "out_dim": 128, "num_layers": 3, "dropout": 0.5}},
+    "fp": {"type": "fingerprint_mlp", "params": {"fp_type": "ecfp", "fp_params": {"radius": 2, "fp_size": 1024}, "hidden_dim": 256, "out_dim": 128, "dropout": 0.5}},
+    "chembert": {"type": "chembert", "params": {"cache_path": "datasets/ChemBERTa-zinc-base-v1.pt", "out_dim": 128}},
+    "lincs": {"type": "lincs", "params": {"cache_path": "datasets/lincs_profiles.pt", "smiles_pert_map_path": "datasets/smiles_to_pert_id.json", "hidden_dim": 128, "out_dim": 128, "dropout": 0.5}},
+    "lincs_graph": {"type": "lincs_graph", "params": {"cache_path": "datasets/lincs_profiles.pt", "smiles_pert_map_path": "datasets/smiles_to_pert_id.json", "hidden_dim": 128, "out_dim": 128, "num_layers": 2, "theta": 1.0, "dropout": 0.5}}
 }
 
 protein_options = {
-    "cnn": {"type": "cnn", "params": {"embed_dim": 256, "num_filters": 128, "kernel_sizes": [3, 7, 15], "max_seq_len": 1000}},
-    "esm2": {"type": "esm2", "params": {"cache_path": "datasets/esm2_t33_650M_UR50D.pt", "out_dim": 256}}
+    "cnn": {"type": "cnn", "params": {"embed_dim": 128, "num_filters": 64, "kernel_sizes": [3, 7, 15], "max_seq_len": 1000}}
 }
 
 import itertools
@@ -50,6 +51,8 @@ protein_keys = list(protein_options.keys())
 smiles_combos = []
 for i in range(1, len(smiles_keys) + 1):
     for combo in itertools.combinations(smiles_keys, i):
+        if "lincs" in combo and "lincs_graph" in combo:
+            continue
         smiles_combos.append(list(combo))
 
 protein_combos = []
@@ -57,7 +60,8 @@ for i in range(1, len(protein_keys) + 1):
     for combo in itertools.combinations(protein_keys, i):
         protein_combos.append(list(combo))
 
-out_dir = Path("./configs")
+out_dir = Path("./configs/lincs")
+out_dir.mkdir(parents=True, exist_ok=True)
 
 import os
 # delete existing config files so we don't have overlapping old variants like gcn_cnn_esm2.yaml if we want to replace them all with systematic names

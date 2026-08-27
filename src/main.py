@@ -59,6 +59,8 @@ from encoders.protein.esm2_encoder import ESM2Encoder
 from encoders.smiles.chembert_encoder import ChemBERTEncoder
 from encoders.smiles.fingerprint_mlp_encoder import FingerprintMLPEncoder
 from encoders.smiles.gcn_encoder import GCNEncoder
+from encoders.smiles.lincs_encoder import LincsEncoder
+from encoders.smiles.lincs_graph_encoder import LincsGraphEncoder
 from fusion.cross_attention_fusion import CrossAttentionFusion
 from fusion.mlp_fusion import MLPFusion
 from models.multimodal import MultimodalDTI
@@ -68,6 +70,7 @@ from processing.protein.esm2_processor import ESM2Processor
 from processing.smiles.chembert_processor import ChemBERTProcessor
 from processing.smiles.fingerprint_processor import FingerprintProcessor
 from processing.smiles.graph_processor import GraphProcessor
+from processing.smiles.lincs_processor import LincsProcessor
 from training.metrics import compute_confusion_matrix
 from training.trainer import Trainer
 
@@ -106,6 +109,44 @@ def _build_one_smiles(enc_cfg: dict) -> tuple[InputProcessor, nn.Module]:
         encoder = ChemBERTEncoder(
             input_dim=processor.embedding_dim,
             out_dim=params.get("out_dim", 256),
+        )
+    elif enc_type == "lincs":
+        cache_path = params["cache_path"]
+        if not Path(cache_path).is_absolute():
+            cache_path = str(ROOT_DIR / cache_path)
+        smiles_pert_map_path = params["smiles_pert_map_path"]
+        if not Path(smiles_pert_map_path).is_absolute():
+            smiles_pert_map_path = str(ROOT_DIR / smiles_pert_map_path)
+        processor = LincsProcessor(
+            cache_path=cache_path,
+            smiles_pert_map_path=smiles_pert_map_path,
+        )
+        encoder = LincsEncoder(
+            input_dim=processor.profile_dim,
+            hidden_dim=params.get("hidden_dim", 512),
+            out_dim=params.get("out_dim", 256),
+            dropout=params.get("dropout", 0.2),
+        )
+    elif enc_type == "lincs_graph":
+        cache_path = params["cache_path"]
+        if not Path(cache_path).is_absolute():
+            cache_path = str(ROOT_DIR / cache_path)
+        smiles_pert_map_path = params["smiles_pert_map_path"]
+        if not Path(smiles_pert_map_path).is_absolute():
+            smiles_pert_map_path = str(ROOT_DIR / smiles_pert_map_path)
+        
+        # Uses the exact same processor as regular LINCS to fetch the 978-dim vector
+        processor = LincsProcessor(
+            cache_path=cache_path,
+            smiles_pert_map_path=smiles_pert_map_path,
+        )
+        encoder = LincsGraphEncoder(
+            in_dim=processor.profile_dim,
+            hidden_dim=params.get("hidden_dim", 128),
+            out_dim=params.get("out_dim", 128),
+            num_layers=params.get("num_layers", 2),
+            theta=params.get("theta", 1.0),
+            dropout=params.get("dropout", 0.5),
         )
     else:
         raise ValueError(f"Unknown smiles encoder type: {enc_type}")
@@ -326,11 +367,22 @@ def main() -> None:
     )
     criterion = nn.BCEWithLogitsLoss()
 
+    # Auto-adjust checkpoint_dir based on config path
+    checkpoint_dir = Path("checkpoints")
+    if "configs" in Path(args.config).parts:
+        try:
+            rel_path = Path(args.config).parent.relative_to(ROOT_DIR / "configs")
+            if str(rel_path) != ".":
+                checkpoint_dir = checkpoint_dir / rel_path
+        except ValueError:
+            pass
+
     trainer = Trainer(
         model=model,
         optimizer=optimizer,
         criterion=criterion,
         device=device,
+        checkpoint_dir=checkpoint_dir,
         checkpoint_filename=args.model_name,
         patience=train_cfg.get("patience", 8),
     )

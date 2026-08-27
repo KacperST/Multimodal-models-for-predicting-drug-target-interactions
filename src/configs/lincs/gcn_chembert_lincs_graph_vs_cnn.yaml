@@ -1,0 +1,53 @@
+data:
+  clean_path: datasets/lincs_balanced.parquet
+  path: datasets/BindingDB_All.tsv
+  pki_threshold: 7.0
+  split_ratios:
+  - 0.7
+  - 0.1
+  - 0.2
+smiles_encoders:
+- type: gcn
+  params:
+    hidden_dim: 128
+    out_dim: 128
+    num_layers: 3
+    dropout: 0.5
+- type: chembert
+  params:
+    cache_path: datasets/ChemBERTa-zinc-base-v1.pt
+    out_dim: 128
+- type: lincs_graph
+  params:
+    cache_path: datasets/lincs_profiles.pt
+    smiles_pert_map_path: datasets/smiles_to_pert_id.json
+    hidden_dim: 128
+    out_dim: 128
+    num_layers: 2
+    theta: 1.0
+    dropout: 0.5
+protein_encoders:
+- type: cnn
+  params:
+    embed_dim: 128
+    num_filters: 64
+    kernel_sizes:
+    - 3
+    - 7
+    - 15
+    max_seq_len: 1000
+fusion:
+  type: mlp
+  params:
+    hidden_dims:
+    - 128
+    - 32
+    dropout: 0.5
+training:
+  batch_size: 128
+  learning_rate: 5.0e-05
+  weight_decay: 1.0e-05
+  epochs: 150
+  patience: 10
+  num_workers: 4
+  device: auto
