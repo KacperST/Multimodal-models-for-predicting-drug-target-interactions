@@ -226,12 +226,34 @@ constructed their own model:
 The authors emphasize the high accuracy of this model, as well as the
 low time and memory resources required for its training.
 
+### DTIGCCN
 
-#### DTIGCCN
+While the majority of the aforementioned models heavily rely on static
+sequence and structural representations, other approaches attempt to
+leverage biological domain knowledge, such as transcriptomic profiling.
+A notable example in this area is the DTIGCCN architecture
+[@shao2020dtigccn]. Instead of representing drugs as 2D molecular graphs
+and proteins as 1D sequences, DTIGCCN extracts features directly from
+the drug and target expression profiles (specifically, 978-dimensional
+vectors from the LINCS L1000 database). The core innovation of DTIGCCN
+lies in dynamically constructing a fully connected gene-gene graph for
+both the drug and the target. In these graphs, each of the 978 landmark
+genes is treated as a separate node, and the edge weights are computed
+dynamically using a Gaussian kernel function over the distances between
+the gene expression values.
 
-While the majority of the aforementioned models heavily rely on static sequence and structural representations, other approaches attempt to leverage biological domain knowledge, such as transcriptomic profiling. A notable example in this area is the DTIGCCN architecture [@shao2020dtigccn]. Instead of representing drugs as 2D molecular graphs and proteins as 1D sequences, DTIGCCN extracts features directly from the drug and target expression profiles (specifically, 978-dimensional vectors from the LINCS L1000 database). The core innovation of DTIGCCN lies in dynamically constructing a fully connected gene-gene graph for both the drug and the target. In these graphs, each of the 978 landmark genes is treated as a separate node, and the edge weights are computed dynamically using a Gaussian kernel function over the distances between the gene expression values. 
-
-To process these dense graphs, the authors employ a spectral-based Graph Convolutional Network (GCN). The graph is first coarsened using the Graclus multi-level clustering algorithm and rearranged into a balanced binary tree, which allows for efficient 1D pooling operations. Simultaneously, to capture the latent relationship between the drug and target, their expression profiles are concatenated into a $2 \times 978$ matrix and processed through a Convolutional Neural Network (CNN). Finally, the features extracted independently by the GCN and jointly by the CNN are fused and passed to a classifier. This methodology demonstrates that treating transcriptomic data as a dynamic graph structure can successfully capture complex biological relationships that static chemical descriptors might miss.
+To process these dense graphs, the authors employ a spectral-based Graph
+Convolutional Network. The graph is first coarsened using the Graclus
+multi-level clustering algorithm and rearranged into a balanced binary
+tree, which allows for efficient 1D pooling operations. Simultaneously,
+to capture the latent relationship between the drug and target, their
+expression profiles are concatenated into a $2 \times 978$ matrix and
+processed through a Convolutional Neural Network (CNN). Finally, the
+features extracted independently by the GCN and jointly by the CNN are
+fused and passed to a classifier. This methodology demonstrates that
+treating transcriptomic data as a dynamic graph structure can
+successfully capture complex biological relationships that static
+chemical descriptors might miss.
 
 ## Cold start problem
 
@@ -413,6 +435,14 @@ A small subset of protein sequences included non-standard amino acid
 characters, such as 'X', representing undefined residues. These records
 were also removed.
 
+Additionally, all protein targets comprising multiple chains (such as
+complex receptor structures) were excluded to maintain sequence
+consistency, restricting the dataset strictly to single-chain targets.
+Finally, to eliminate measurement redundancy and potential bias,
+duplicate entries-where multiple distinct assays reported affinity for
+the exact same drug-target pair-were aggregated by calculating the mean
+of their respective $K_i$ values.
+
 Following these filtering steps, the cleaned dataset comprised roughly
 450,000 high-quality records. Since this study treats interaction
 prediction as a binary classification task, a formal activity threshold
@@ -425,13 +455,38 @@ activity threshold was established at $pK_i \ge 7.0$ (equivalent to
 $K_i \le 100$ nM), effectively binarizing the dataset into active and
 inactive drug-target pairs for the subsequent experiments.
 
-### Integration of Biological Prior Knowledge: LINCS L1000 Profiles
+#### Integration of Biological Prior Knowledge: LINCS L1000 Profiles
 
-Unlike molecular graphs or SMILES strings, which encode structural properties, the LINCS L1000 dataset encodes functional biological consequences inside a living cellular system. The dataset provides differential gene expression profiles (Z-scores) quantifying the transcriptional response of various human cancer cell lines to small-molecule perturbations. Recognizing that cellular regulatory networks are highly correlated, the L1000 assay physically measures the expression of 978 core "landmark genes," using them to computationally infer the remaining transcriptome. In this research, strictly the 978 directly measured landmark genes were utilized to ensure the highest data fidelity.
+Unlike molecular graphs or SMILES strings, which encode structural
+properties, the LINCS L1000 dataset encodes functional biological
+consequences inside a living cellular system. The dataset provides
+differential gene expression profiles (Z-scores) quantifying the
+transcriptional response of human cancer cell lines to small-molecule
+perturbations. Because cellular regulatory networks are highly
+correlated, the L1000 assay physically measures the expression of 978
+core \"landmark genes,\" using them to computationally infer the
+remaining transcriptome. In this research, only the 978 directly
+measured landmark genes were utilized to avoid computational artifacts.
 
-To integrate this biological prior, the raw \texttt{level5} HDF5 matrix containing hundreds of thousands of signatures was processed. The pipeline first mapped the canonical SMILES strings from the BindingDB dataset to the internal LINCS identifiers (\texttt{pert\_id}). Subsequently, only signatures marked as high-quality (\texttt{is\_hiq=1}) were extracted. Because a single compound is typically tested across multiple cell lines, doses, and timepoints---resulting in a heterogeneous set of signatures---a robust consensus profile was required. The profiles were aggregated by computing the column-wise median across all experiments for a given drug. The median aggregation effectively filters out cell-line-specific noise and toxic dose artifacts, isolating the core biological footprint, or Mechanism of Action (MoA), of the compound.
+To integrate this biological prior, the raw `level5` HDF5 matrix
+containing hundreds of thousands of signatures was processed. The
+pipeline first mapped the canonical SMILES strings from the BindingDB
+dataset to the internal LINCS identifiers (`pert_id`). Subsequently,
+only signatures marked as high-quality (`is_hiq=1`) were extracted.
+Because a single compound is typically tested across multiple cell
+lines, doses, and timepoints, a single consensus profile was required.
+The profiles were aggregated by computing the column-wise median across
+all experiments for a given drug. This median aggregation filters out
+cell-line-specific noise and toxic dose artifacts, isolating the core
+Mechanism of Action (MoA) of the compound.
 
-This preprocessing yielded a unique, 978-dimensional continuous vector for each mapped drug. Due to the limited intersection between the BindingDB dataset and the LINCS catalog, the final multimodal dataset incorporating transcriptomic data was constrained to approximately 27,498 active and inactive pairs. To prevent class imbalance from biasing the models, this subset was rigorously balanced to a 50/50 ratio via undersampling of the majority class, prior to the application of the standard scaffold split.
+This preprocessing yielded a unique, 978-dimensional continuous vector
+for each mapped drug. Due to the limited intersection between the
+BindingDB dataset and the LINCS catalog, the final multimodal dataset
+incorporating transcriptomic data was reduced to approximately 27,498
+active and inactive pairs. To prevent class imbalance, the majority
+class was undersampled to achieve a strict 50/50 ratio prior to applying
+the scaffold split.
 
 ## Train, validation and test data split
 
@@ -454,7 +509,7 @@ where the goal is to identify entirely novel active compounds rather
 than trivial analogs of known drugs. The dataset was partitioned into
 three subsets using a scaffold splitting technique:
 
-- **Training set:** 317,600 interaction pairs (70%), utilized during the
+- **Training set:** 317,060 interaction pairs (70%), utilized during the
   model training process.
 
 - **Validation set:** 44,695 interaction pairs (10%), used for
@@ -850,7 +905,7 @@ projection head. This ensures that the resulting chemical embedding
 matches the exact 1024-dimensional fixed size of the protein vector.
 
 <figure id="fig:chembert_architektura" data-latex-placement="H">
-<embed src="./img/chembert.pdf" style="width:40.0%" />
+<embed src="./img/chembert.pdf" style="width:35.0%" />
 <figcaption>ChemBERTa Architecture</figcaption>
 </figure>
 
@@ -865,31 +920,73 @@ full model retraining.
 
 ### LINCS L1000 Transcriptomic Profiling Architectures
 
-While structural and sequence-based descriptors capture static, physicochemical properties, true biological domain knowledge is required to reflect the dynamic consequences of drug administration. To this end, the models were extended to consume transcriptomic signatures from the Library of Integrated Network-based Cellular Signatures (LINCS) L1000 dataset. The preprocessing of this dataset, which yields a 978-dimensional continuous vector for each mapped drug, is detailed in Section 3.1.3.
+While structural and sequence-based descriptors capture static,
+physicochemical properties, true biological domain knowledge is required
+to reflect the dynamic consequences of drug administration. To this end,
+the models were extended to consume transcriptomic signatures from the
+Library of Integrated Network-based Cellular Signatures (LINCS) L1000
+dataset. The preprocessing of this dataset, which yields a
+978-dimensional continuous vector for each mapped drug, is detailed in
+Section 3.1.3.
 
-Within the neural architecture, two distinct integration strategies for the LINCS modality were evaluated. First, a global Multi-Layer Perceptron (MLP) encoder was designed (\texttt{LincsEncoder}), as illustrated in Figure \ref{fig:lincs_mlp_architektura}.
+Within the neural architecture, two distinct integration strategies for
+the LINCS modality were evaluated. First, a global Multi-Layer
+Perceptron (MLP) encoder was designed (`LincsEncoder`), as illustrated
+in Figure [3.13](#fig:lincs_mlp_architektura){reference-type="ref"
+reference="fig:lincs_mlp_architektura"}.
 
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=0.5\textwidth]{img/lincs_mlp.pdf}
-    \caption{LINCS MLP Architecture}
-    \label{fig:lincs_mlp_architektura}
-\end{figure}
+<figure id="fig:lincs_mlp_architektura" data-latex-placement="H">
+<img src="./img/lincs/lincs_mlp.png" style="width:35.0%" />
+<figcaption>LINCS MLP Architecture</figcaption>
+</figure>
 
-The \texttt{LincsEncoder} receives a batch of $B$ samples, where each sample is a 978-dimensional vector ($B \times 978$). Following the architecture pattern established for the fingerprint descriptor, it consists of an initial linear projection reducing the dimensionality from 978 to a hidden dimension of 128[cite: 3]. This is followed by a 1D batch normalization layer, a standard ReLU activation function, and a dropout layer with a probability of $p=0.5$ to prevent overfitting[cite: 3]. A final linear projection maps the data to the output size of 128 dimensions, which is subsequently passed through another 1D batch normalization layer and a ReLU activation[cite: 3]. This pipeline effectively serves as a global functional summary of the drug's mechanism of action.
+The `LincsEncoder` receives a batch of $B$ samples, where each sample is
+a 978-dimensional vector ($B \times 978$). Following the architecture
+pattern established for the fingerprint descriptor, it consists of an
+initial linear projection reducing the dimensionality from 978 to a
+hidden dimension of 128. This is followed by a 1D batch normalization
+layer, a standard ReLU activation function, and a dropout layer with a
+probability of $p=0.5$ to prevent overfitting. A final linear projection
+maps the data to the output size of 128 dimensions, which is
+subsequently passed through another 1D batch normalization layer and a
+ReLU activation. This pipeline effectively serves as a global functional
+summary of the drug's mechanism of action.
 
-Second, inspired by the DTIGCCN architecture, a novel node-level \texttt{LincsGraphEncoder} was implemented, depicted in Figure \ref{fig:lincs_graph_architektura}.
+Second, inspired by the DTIGCCN architecture, a novel node-level
+`LincsGraphEncoder` was implemented, as depicted in Figure
+[3.14](#fig:lincs_graph_architektura){reference-type="ref"
+reference="fig:lincs_graph_architektura"}.
 
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=0.7\textwidth]{img/lincs_graph.pdf}
-    \caption{LINCS Dynamic Graph Architecture}
-    \label{fig:lincs_graph_architektura}
-\end{figure}
+<figure id="fig:lincs_graph_architektura" data-latex-placement="H">
+<img src="./img/lincs/lincs_graph.png" style="width:70.0%" />
+<figcaption>LINCS Dynamic Graph Architecture</figcaption>
+</figure>
 
-Unlike traditional molecular graphs where nodes are physical atoms, this encoder dynamically constructs a fully connected graph treating each of the 978 landmark genes as a separate node. The initial node features are created by expanding the 978-dimensional input into a $B \times 978 \times 1$ tensor and linearly projecting the single feature to a predefined hidden dimension of 128[cite: 4]. Simultaneously, the adjacency matrix ($A$) defining the edge weights between these nodes is computed dynamically using a Gaussian kernel function over the squared L2 distances between gene Z-scores[cite: 4]:
-$$A_{i,j} = \exp\left(-\frac{(x_i - x_j)^2}{2\theta^2}\right)$$
-This formula ensures that genes exhibiting highly similar transcriptional responses receive strong connection weights, simulating a co-expression network[cite: 4]. To maintain numerical stability during message passing, the adjacency matrix undergoes symmetric normalization: $A_{norm} = D^{-1/2} A D^{-1/2}$, where $D$ is the degree matrix[cite: 4]. The node features are then processed through standard Graph Convolutional Network (GCN) layers, where information is propagated according to $h = h \times A_{norm}$, followed by 1D batch normalization, a standard ReLU activation, and a dropout layer[cite: 4]. Finally, to produce a single fixed-size embedding for the classification task, a global mean pooling operation is applied across all 978 nodes, and a subsequent linear layer projects the pooled vector to the final output dimension of 128[cite: 4]. This dual approach allowed for testing whether biological knowledge is better consumed as a global functional summary or through explicitly modeling the co-expression relationships between individual genes.
+Unlike traditional molecular graphs where nodes are physical atoms, this
+encoder dynamically constructs a fully connected graph treating each of
+the 978 landmark genes as a separate node. The initial node features are
+created by expanding the 978-dimensional input into a
+$B \times 978 \times 1$ tensor and linearly projecting the single
+feature to a predefined hidden dimension of 128. Simultaneously, the
+adjacency matrix ($A$) defining the edge weights between these nodes is
+computed dynamically using a Gaussian kernel function over the squared
+L2 distances between gene Z-scores:
+$$A_{i,j} = \exp\left(-\frac{(x_i - x_j)^2}{2\theta^2}\right)$$ This
+formula ensures that genes exhibiting highly similar transcriptional
+responses receive strong connection weights, simulating a co-expression
+network. To maintain numerical stability during message passing, the
+adjacency matrix undergoes symmetric normalization:
+$A_{norm} = D^{-1/2} A D^{-1/2}$, where $D$ is the degree matrix. The
+node features are then processed through standard Graph Convolutional
+Network (GCN) layers, where information is propagated according to
+$h = h \times A_{norm}$, followed by 1D batch normalization, a standard
+ReLU activation, and a dropout layer. Finally, to produce a single
+fixed-size embedding for the classification task, a global mean pooling
+operation is applied across all 978 nodes, and a subsequent linear layer
+projects the pooled vector to the final output dimension of 128. This
+dual approach allowed for testing whether biological knowledge is better
+consumed as a global functional summary or through explicitly modeling
+the co-expression relationships between individual genes.
 
 ### Overall Experimental Architecture and Modality Fusion
 
@@ -904,7 +1001,7 @@ framework for systematic testing and comparison.
 
 To achieve this, a modular dual-pathway architecture was designed, as
 illustrated in Figure
-[3.13](#fig:overall_architektura){reference-type="ref"
+[3.15](#fig:overall_architektura){reference-type="ref"
 reference="fig:overall_architektura"}.
 
 <figure id="fig:overall_architektura" data-latex-placement="H">
@@ -989,39 +1086,69 @@ stronger regularization.
 #### Phase 2: Cross-Attention Integration and Parameter-Efficient Fine-Tuning
 
 A standard MLP effectively captures non-linear relationships, but it
-assumes that drug and protein features are completely independent before
-they are joined. In reality, biological binding is a dynamic process
-where a drug molecule physically aligns with a specific binding pocket
-on a protein. To capture these deeper structural connections, the second
-phase of this research introduces a Cross-Attention Fusion mechanism.
-This mechanism allows the model to simulate this biological reality: the
-features of the drug can directly \"attend\" to specific amino acid
-motifs of the protein, and vice versa, before the final classification
-is made.
+assumes that drug and protein features are independent before fusion. In
+biological systems, binding is a dynamic process where a drug molecule
+aligns with a specific binding pocket. To model this mutual interaction,
+the second phase of this research utilizes a Cross-Attention Fusion
+mechanism.
 
-Unlike many previous studies that completely freeze their language
-models, this phase uses parameter-efficient fine-tuning. Instead of
-relying on static features, the ChemBERTa and ESM-2 encoders are
-dynamically fine-tuned using LoRA (Low-Rank Adaptation). Instead of
-updating millions of parameters, LoRA injects small, trainable matrices
-into the transformer layers while keeping the original pre-trained
-weights frozen. This allows the large models to adapt specifically to
-the DTI task without the substantial memory and computational cost of
-fine-tuning the entire network.
+Because the individual drug and protein encoders output fixed-size
+global embeddings, passing these isolated representations directly into
+a standard cross-attention module presents a technical challenge. If an
+attention mechanism receives a sequence of length 1, the Softmax
+operation becomes degenerate, assigning a weight of 1.0 and passing the
+input unchanged. To address this, a custom gating-attention fusion
+module (`CrossAttentionFusion`) was implemented.
 
-However, training attention mechanisms and fine-tuning large
-transformers still require significant computing power. Therefore, this
-second phase was structured as an experimental funnel. The
-Cross-Attention and LoRA experiments were restricted to only the top ten
-models from Phase 1. This ensured that the most advanced, resource-heavy
-techniques were exclusively applied to the architectures that had
-already proven their high predictive potential.
+Initially, the drug and protein output vectors are linearly projected to
+a shared dimensional space ($proj\_dim = 256$). These projections are
+then stacked to form a unified two-token sequence: $[DRUG, PROTEIN]$.
+This concatenated sequence ($B \times 2 \times proj\_dim$) serves
+simultaneously as the Query ($Q$), Key ($K$), and Value ($V$) for a
+multi-head attention mechanism. This configuration produces a
+non-degenerate $2 \times 2$ attention matrix, computing the cross-modal
+influence between the drug and the protein.
+
+The architecture consists of two stacked `MultiheadAttention` layers (4
+attention heads, base dropout 0.35), utilizing residual connections and
+Layer Normalization. After the attention blocks, the two-token sequence
+is unpacked back into distinct, attention-enriched drug ($s$) and
+protein ($p$) vectors. A learned gating mechanism controls their
+combination: $$g = \sigma(W_{gate} [s; p])$$
+$$fused = g \times s + (1 - g) \times p$$ This fused representation is
+passed to an MLP classification head to yield the binary prediction.
+
+Unlike the first phase, which relied on static cached features, this
+phase employs parameter-efficient fine-tuning. The ESM-2 and ChemBERTa
+encoders are dynamically fine-tuned using Low-Rank Adaptation (LoRA)
+with a rank of $r=16$, an alpha scaling factor of $\alpha=16$, and an
+adapter dropout of $0.1$. The use of trainable low-rank matrices allows
+the models to adapt to the DTI task with reduced memory and
+computational overhead compared to full fine-tuning.
+
+Given the high computational cost of training attention mechanisms and
+fine-tuning transformers, the Cross-Attention and LoRA experiments were
+restricted to the top ten performing models from Phase 1. This limited
+the resource-intensive training exclusively to the most promising
+structural architectures.
 
 #### Phase 3: Integration of Biological Prior Knowledge (LINCS L1000)
 
-Building upon the findings from the structural and sequence-based combinations in the preceding phases, Phase 3 of the experiments introduces the LINCS L1000 transcriptomic data. While Phase 1 and Phase 2 focus on analyzing the static chemical topology of the drug and the physical sequence of the target, they inherently lack the capacity to capture the dynamic biological response elicited by a compound inside a living cell.
+Building on the structural and sequence-based models developed in
+earlier phases, Phase 3 introduces the LINCS L1000 transcriptomic data.
+While the initial phases focus on analyzing the static chemical topology
+of the drug and the physical sequence of the protein target, they lack
+the capacity to reflect the dynamic biological response triggered inside
+a living cell.
 
-To address this, this final phase isolates the most performant baseline architectures and systematically integrates the previously described \texttt{LincsEncoder} and \texttt{LincsGraphEncoder}. By appending these biological descriptors to the structural pathways, the objective is to evaluate whether providing the network with dynamic biological domain knowledge can bridge the gap in predicting complex, atypical drug-target interactions (such as scaffold hopping or identifying alternative binding mechanisms). This phase explicitly compares the global aggregation strategy of the MLP encoder against the dynamic, local co-expression modeling of the Graph encoder to determine the optimal modality fusion strategy for high-dimensional biological data.
+To address this limitation, the third phase is designed to integrate the
+`LincsEncoder` and `LincsGraphEncoder` with the top-performing
+structural encoders identified previously. By fusing these biological
+descriptors with the existing chemical pathways, the objective is to
+evaluate whether dynamic domain knowledge can improve the prediction of
+complex drug-target interactions. Similar to Phase 1, multiple model
+configurations will be trained and systematically compared to measure
+the exact predictive benefit of adding this transcriptomic information.
 
 # Experimental Results and Discussion
 
@@ -1141,12 +1268,16 @@ reference="fig:best_model"} presents the results for the `gcn_and_cnn`
 architecture. The t-SNE projection (Figure
 [4.1](#fig:best_model){reference-type="ref"
 reference="fig:best_model"}d) shows a clear separation between active
-and inactive interactions. Because the model groups these classes so
-well, the Confusion Matrix (Figure
+and inactive interactions. Because the model groups these classes
+effectively, the Confusion Matrix (Figure
 [4.1](#fig:best_model){reference-type="ref"
-reference="fig:best_model"}c) is very balanced. The number of false
-positives and false negatives is similar, which explains the high
-overall AUC (0.8925).
+reference="fig:best_model"}c) is balanced. The number of false positives
+(8,205) and false negatives (8,468) is similar, resulting in the highest
+overall predictive performance in the experiment, with an AUC of 0.8957
+(Figure [4.1](#fig:best_model){reference-type="ref"
+reference="fig:best_model"}a) and an AUPRC of 0.8946 (Figure
+[4.1](#fig:best_model){reference-type="ref"
+reference="fig:best_model"}b).
 
 <figure id="fig:best_model" data-latex-placement="H">
 <figure>
@@ -1170,16 +1301,25 @@ overall AUC (0.8925).
 </figure>
 
 In contrast, Figure [4.2](#fig:complex_model){reference-type="ref"
-reference="fig:complex_model"} shows the results for the most complex
+reference="fig:complex_model"} presents the results for the most complex
 architecture. Even though this model utilizes the highest number of
-features, the t-SNE plot shows that the two classes overlap much more in
-the middle. The high dimensionality of the concatenated embeddings,
-combined with feature redundancy and stronger adaptive regularization,
-impairs the MLP's ability to establish a robust decision boundary. This
-issue is clearly reflected in the Confusion Matrix (Figure
+extracted features, the t-SNE plot (Figure
+[4.2](#fig:complex_model){reference-type="ref"
+reference="fig:complex_model"}d) shows a larger overlap between the
+active and inactive classes in the central region of the latent space.
+The high dimensionality of the concatenated embeddings, combined with
+feature redundancy and stronger adaptive regularization, makes it harder
+for the MLP to establish a clear decision boundary. This is visible in
+the Confusion Matrix (Figure
 [4.2](#fig:complex_model){reference-type="ref"
 reference="fig:complex_model"}c), where the number of false negatives
-increases to 9,530 (compared to 8,786 in the baseline model).
+rises to 10,834 (compared to 8,786 in the baseline model). Consequently,
+the overall predictive performance drops, resulting in an AUC of 0.8853
+and an AUPRC of 0.8852 (Figures
+[4.2](#fig:complex_model){reference-type="ref"
+reference="fig:complex_model"}a and
+[4.2](#fig:complex_model){reference-type="ref"
+reference="fig:complex_model"}b).
 
 <figure id="fig:complex_model" data-latex-placement="H">
 <figure>
@@ -1203,20 +1343,21 @@ increases to 9,530 (compared to 8,786 in the baseline model).
 </figure>
 
 Finally, Figure [4.3](#fig:worst_model){reference-type="ref"
-reference="fig:worst_model"} shows why models using only pre-trained
-language models (without graph structures) perform poorly. The t-SNE
-plot for `chembert_and_esm2` (Figure
+reference="fig:worst_model"} shows why architectures relying exclusively
+on pre-trained language models (without explicit graph structures)
+achieve lower predictive performance. The t-SNE projection for
+`chembert_and_esm2` (Figure [4.3](#fig:worst_model){reference-type="ref"
+reference="fig:worst_model"}d) indicates a large overlap between the
+active and inactive classes. This suggests that processing molecules and
+proteins solely as 1D text sequences may not capture sufficient spatial
+and topological information to accurately model physical binding.
+Consequently, the Precision-Recall curve (Figure
 [4.3](#fig:worst_model){reference-type="ref"
-reference="fig:worst_model"}d) displays a considerable overlap between
-the two classes. This proves that processing molecules and proteins only
-as 1D text sequences is not enough to accurately predict physical
-binding. As a result, the Precision-Recall curve (Figure
-[4.3](#fig:worst_model){reference-type="ref"
-reference="fig:worst_model"}b) is noticeably lower, and the Confusion
-Matrix (Figure [4.3](#fig:worst_model){reference-type="ref"
-reference="fig:worst_model"}c) shows over 10,000 errors in both false
-positives (10,636) and false negatives (10,092), leading to the lowest
-AUC score in the experiment.
+reference="fig:worst_model"}b) has a lower AUPRC (0.8594), and the
+Confusion Matrix (Figure [4.3](#fig:worst_model){reference-type="ref"
+reference="fig:worst_model"}c) shows a high error rate, with 10,021
+false positives and 10,190 false negatives, resulting in the lowest
+overall AUC score (0.8591) in the experiment.
 
 <figure id="fig:worst_model" data-latex-placement="H">
 <figure>
@@ -1239,16 +1380,15 @@ AUC score in the experiment.
 (<code>chembert_and_esm2</code>).</figcaption>
 </figure>
 
-Overall, it is important to note that despite the distinct differences
-in multimodal architectures, all evaluated models achieved strong and
-relatively similar results. The performance gap between the absolute
-best model (`gcn_and_cnn`, AUC 0.8957) and the lowest performing model
-(`chembert_and_esm2`, AUC 0.8591) is less than 4 percentage points. This
-narrow variance suggests that the dataset itself, combined with the
-rigorous scaffold splitting strategy, imposes a natural performance
-ceiling. Furthermore, it demonstrates that while explicit graph
-representations (GCN) provide the best predictive edge, even the purely
-text-based language models are capable of extracting highly meaningful
+Overall, despite the differences in multimodal architectures, all
+evaluated models achieved relatively similar results. The performance
+gap between the top model (`gcn_and_cnn`, AUC 0.8957) and the
+lowest-performing model (`chembert_and_esm2`, AUC 0.8591) is less than 4
+percentage points. This narrow variance suggests that the dataset
+itself, combined with the scaffold splitting strategy, imposes a natural
+performance ceiling. Furthermore, it indicates that while explicit graph
+representations (GCN) provide the best predictive performance, purely
+text-based language models are still capable of extracting meaningful
 biological and chemical patterns.
 
 ## Phase 2 Results
@@ -1258,7 +1398,8 @@ mechanism. However, this approach did not improve the results. As shown
 in Table
 [\[tab:phase1_vs_phase2\]](#tab:phase1_vs_phase2){reference-type="ref"
 reference="tab:phase1_vs_phase2"}, the cross-attention models scored
-about 1
+about 1% lower in AUC compared to their MLP counterparts across the 10
+tested architectures.
 
 It is important to note that Phase 2 introduced three changes at the
 same time:
@@ -1314,9 +1455,8 @@ Phase 2 architecture (`gcn_chembert_and_cnn`). The t-SNE projection
 reference="fig:phase2_best_model"}d) demonstrates a clear separation
 between the active and inactive classes. The cross-attention mechanism
 aligned the 2D structural graph signals with the 1D contextual language
-embeddings, achieving high Recall. However, as seen in the in the
-Confusion Matrix (Figure
-[4.4](#fig:phase2_best_model){reference-type="ref"
+embeddings, achieving high Recall. However, as seen in the Confusion
+Matrix (Figure [4.4](#fig:phase2_best_model){reference-type="ref"
 reference="fig:phase2_best_model"}c), this higher recall resulted in
 9,959 False Positives, causing a slight drop in overall Precision
 compared to the Phase 1 baseline.
@@ -1385,37 +1525,6 @@ compensate for excessive informational noise.
 <figcaption>Visual diagnostics for the overloaded Phase 2 model
 (<code>gcn_fp_chembert_and_cnn_esm2</code>).</figcaption>
 </figure>
-
-## Phase 3 Results: Integration of Biological Prior Knowledge (LINCS L1000)
-
-The final phase of experiments investigated the impact of incorporating functional biological priors---specifically, the transcriptomic signatures from the LINCS L1000 dataset---into the multimodal prediction framework. Due to the stringent intersection requirements between BindingDB and the LINCS catalog, the models in this phase were trained and evaluated on a heavily filtered, balanced subset of approximately 27,000 interactions. While the smaller dataset size precludes a direct numerical comparison of AUC scores with the architectures evaluated in Phases 1 and 2, it provides a controlled environment to assess the relative contribution of transcriptomic data compared to static chemical representations.
-
-A comprehensive combinatorial evaluation of 23 configurations was performed. The models utilized either the global MLP projection (\texttt{lincs}) or the node-level graph integration (\texttt{lincs\_graph}), alongside the structural modalities (GCN, Fingerprints, ChemBERTa) and the CNN protein encoder. The results for the top-performing architectures are presented in Table \ref{tab:lincs_results}.
-
-\begin{table}[H]
-\centering
-\begin{tabular}{lcccccc}
-\toprule
-\textbf{Model Architecture} & \textbf{AUC} & \textbf{AUPRC} & \textbf{F1} & \textbf{Precision} & \textbf{Recall} & \textbf{Loss} \\
-\midrule
-\texttt{fp\_chembert\_lincs\_vs\_cnn} & 0.7635 & 0.7125 & 0.6828 & 0.6727 & 0.6933 & 0.6728 \\
-\texttt{gcn\_fp\_chembert\_lincs\_graph\_vs\_cnn} & 0.7564 & 0.6996 & 0.6712 & 0.6644 & 0.6782 & 0.7307 \\
-\texttt{fp\_lincs\_graph\_vs\_cnn} & 0.7536 & 0.7152 & 0.6431 & 0.6370 & 0.6494 & 0.7472 \\
-\texttt{gcn\_fp\_chembert\_lincs\_vs\_cnn} & 0.7515 & 0.6714 & 0.6600 & 0.6622 & 0.6578 & 0.6639 \\
-\texttt{gcn\_fp\_lincs\_vs\_cnn} & 0.7514 & 0.6940 & 0.6717 & 0.6787 & 0.6649 & 0.7331 \\
-\dots & \dots & \dots & \dots & \dots & \dots & \dots \\
-\texttt{fp\_chembert\_vs\_cnn} (baseline) & 0.7124 & 0.6338 & 0.6545 & 0.6271 & 0.6844 & 0.8031 \\
-\bottomrule
-\end{tabular}
-\caption{Performance metrics for the top multimodal configurations evaluated on the LINCS L1000 dataset subset (Phase 3).}
-\label{tab:lincs_results}
-\end{table}
-
-The empirical results suggest that the integration of biological domain knowledge yields measurable improvements in predictive performance. The best-performing model, \texttt{fp\_chembert\_lincs\_vs\_cnn}, achieved an AUC of 0.7635, notably outperforming its corresponding structural-only baseline, \texttt{fp\_chembert\_vs\_cnn} (AUC 0.7124). This performance delta indicates that the transcriptomic signature provides orthogonal, functional information that is not fully captured by static 2D molecular representations.
-
-Interestingly, the global MLP projection (\texttt{lincs}) generally outperformed the node-level graph integration (\texttt{lincs\_graph}) across comparable configurations. For instance, \texttt{fp\_chembert\_lincs\_vs\_cnn} surpassed the heaviest combinatorial model, \texttt{gcn\_fp\_chembert\_lincs\_graph\_vs\_cnn}. This observation is consistent with the findings from earlier phases regarding model complexity. It suggests that building a fully connected, dense 978-node gene correlation graph is highly susceptible to feature redundancy and is harder to optimize than a direct, global MLP projection which effectively isolates the core mechanism of action.
-
-Furthermore, the strong performance of models integrating transcriptomic data highlights their potential for identifying the phenomenon of "Scaffold Hopping." Because the LINCS vector encodes the downstream biological consequences of drug administration, the neural network can recognize the functional equivalence of two distinct molecules, even if their chemical structures and resulting fingerprints differ significantly. The transcriptomic prior acts as a unifying functional bridge, enabling the model to generalize beyond explicit structural similarity.
 
 ## Comparative Error Analysis and Molecular Diagnostics {#sec:error_analysis}
 
@@ -1555,6 +1664,59 @@ fusion strategy applied. This provides empirical evidence that the local
 further supports the intuition that drug-target affinity is primarily
 governed by highly localized sequence motifs and specific binding
 pockets, rather than by the global length of the protein chain.
+
+## Phase 3: Integrating Domain Knowledge with LINCS L1000
+
+Integrating the LINCS L1000 dataset as an additional modality yielded
+improvements in overall predictive performance. As detailed in Table
+[\[tab:lincs_fusion_comparison\]](#tab:lincs_fusion_comparison){reference-type="ref"
+reference="tab:lincs_fusion_comparison"}, appending gene expression
+features increased the Area Under the Curve (AUC) for all baseline
+structural configurations, with the exception of the standalone GCN
+model.
+
+Excluding the single GCN setup, the remaining multimodal architectures
+gained a minimum of 0.5 percentage points in AUC. The largest increase
+occurred in the dual FP and ChemBERTa baseline, which improved by 5.1
+percentage points (from 0.712 to 0.763) upon the addition of the LINCS
+MLP module. This shift suggests that supplementing structural chemical
+descriptors with functional transcriptomic data improves the
+identification of complex interaction patterns.
+
+Interestingly, the standalone GCN was the only model to suffer a
+performance degradation when combined with LINCS. This drop likely
+occurs because the highly dense, 978-dimensional biological vector
+overwhelms the sparser topological signals extracted by the isolated GCN
+during the late-fusion concatenation. Notably, when the GCN is supported
+by an additional structural modality (e.g., FP + GCN), the integration
+of LINCS successfully improves predictive performance.
+
+Furthermore, the evaluation indicates a slight advantage for the global
+Multi-Layer Perceptron (MLP) encoder over the dynamic graph variant
+within the fusion frameworks. The standard MLP configuration yielded
+higher AUC scores in 4 out of 7 evaluated structural combinations,
+suggesting that a global functional summary is often sufficient for this
+classification task.
+
+To further isolate the predictive capacity of the biological
+descriptors, the LINCS encoders were also evaluated independently,
+without any structural features. Table
+[4.2](#tab:lincs_only_models){reference-type="ref"
+reference="tab:lincs_only_models"} presents the performance of these
+transcriptomic-only models. While they achieve baseline predictive
+capabilities (AUC near 0.698), they fall short of the structural
+baselines, indicating that biological domain knowledge acts best as a
+supplementary prior rather than a standalone descriptor.
+
+::: {#tab:lincs_only_models}
+  **Model Strategy**     **AUC**    **AUPRC**    **F1**     **Precision**   **Recall**
+  -------------------- ----------- ----------- ----------- --------------- ------------
+  LINCS (MLP)             0.697       0.616       0.595         0.583         0.606
+  LINCS (Graph)         **0.698**   **0.617**   **0.601**     **0.594**     **0.608**
+
+  : Performance of Models Using Exclusively LINCS L1000 Expression
+  Profiles
+:::
 
 # Summary and Conclusions
 
