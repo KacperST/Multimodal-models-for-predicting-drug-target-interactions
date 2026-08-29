@@ -1,0 +1,50 @@
+graph TD
+    %% Styling definitions
+    classDef inputStyle fill:#dae8fc,stroke:#6c8ebf,stroke-width:1.5px,color:#000000;
+    classDef defaultStyle fill:#ffffff,stroke:#333333,stroke-width:1.5px,color:#000000;
+    classDef poolStyle fill:#e1d5e7,stroke:#b854d4,stroke-width:1.5px,color:#000000;
+    classDef outputStyle fill:#e2f0d9,stroke:#385723,stroke-width:1.5px,color:#000000;
+
+    %% Nodes
+    A["LINCS L1000 Profile
+    (B, 978)"]:::inputStyle
+
+    subgraph Graph_Construction ["Dynamic Gene-Gene Graph Construction"]
+        B["Compute Distances"]:::defaultStyle
+        C["Gaussian Kernel"]:::defaultStyle
+        D["Symmetric Normalization"]:::defaultStyle
+        B --> C
+        C --> D
+    end
+
+    A --> Graph_Construction
+
+    subgraph GCN_Layers ["Dense GCN Layers"]
+        E["Node Features"]:::defaultStyle
+        F["Linear Projection"]:::defaultStyle
+        G["Dense GCNConv"]:::defaultStyle
+        H["BatchNorm1d + ReLU"]:::defaultStyle
+        H2["Dropout"]:::defaultStyle
+        
+        E --> F
+        F --> G
+        G --> H
+        H --> H2
+    end
+
+    A --> E
+    D --> G
+    H2 -.->|"next layer"| G
+
+    %% Output
+    I["Global Mean Pooling"]:::poolStyle
+    J["Final Projection"]:::defaultStyle
+    K["LINCS Graph Representation Vector"]:::outputStyle
+
+    H2 --> I
+    I --> J
+    J --> K
+
+    %% Container styling
+    style Graph_Construction fill:#dae8fc,stroke:#6c8ebf,stroke-width:1.5px,stroke-dasharray: 5 5,color:#000000
+    style GCN_Layers fill:#fff2cc,stroke:#d6b656,stroke-width:1.5px,stroke-dasharray: 5 5,color:#d6b656 

@@ -1,0 +1,56 @@
+graph TD
+    %% Styling definitions
+    classDef inputStyle fill:#dae8fc,stroke:#6c8ebf,stroke-width:1.5px,color:#000000;
+    classDef defaultStyle fill:#ffffff,stroke:#333333,stroke-width:1.5px,color:#000000;
+    classDef concatStyle fill:#fce4d6,stroke:#c65911,stroke-width:1.5px,color:#000000;
+    classDef outputStyle fill:#e2f0d9,stroke:#385723,stroke-width:1.5px,color:#000000;
+
+    %% Nodes
+    A["Protein Sequence"]:::inputStyle
+    
+    A --> CNN_Blocks
+
+    %% Parallel Convolutional Blocks Container
+    subgraph CNN_Blocks ["Parallel Convolutional Blocks (1D-CNN)                                     "]
+        B["Embedding Layer"]:::defaultStyle
+        
+        C1["CNN Block
+        kernel_size=3"]:::defaultStyle
+        C2["CNN Block
+        kernel_size=7"]:::defaultStyle
+        C3["CNN Block
+        kernel_size=15"]:::defaultStyle
+        
+        B --> C1
+        B --> C2
+        B --> C3
+    end
+
+    %% Masked Max-Pooling Container
+    subgraph Masked_Pooling ["Masked Max-Pooling                                     "]
+        P1["Max-Pool"]:::defaultStyle
+        P2["Max-Pool"]:::defaultStyle
+        P3["Max-Pool"]:::defaultStyle
+    end
+
+    %% Connections between CNN and Pool layers
+    C1 --> P1
+    C2 --> P2
+    C3 --> P3
+
+    %% Concatenation and Output
+    %% W Mermaid zaokrąglony kształt (okrąg/owal) uzyskujemy przez zastosowanie (( )) lub ( )
+    M(("Concatenation")):::concatStyle
+    
+    P1 --> M
+    P2 --> M
+    P3 --> M
+    
+    O["Final Protein
+    Representation Vector"]:::outputStyle
+    
+    M --> O
+
+    %% Container styling
+    style CNN_Blocks fill:#fff2cc,stroke:#d6b656,stroke-width:1.5px,stroke-dasharray: 5 5,color:#d6b656
+    style Masked_Pooling fill:#e1d5e7,stroke:#b854d4,stroke-width:1.5px,stroke-dasharray: 5 5,color:#b854d4

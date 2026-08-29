@@ -1,0 +1,33 @@
+graph TD
+    %% Styling definitions
+    classDef inputStyle fill:#dae8fc,stroke:#6c8ebf,stroke-width:1.5px,color:#000000;
+    classDef defaultStyle fill:#ffffff,stroke:#333333,stroke-width:1.5px,color:#000000;
+    classDef outputStyle fill:#e2f0d9,stroke:#385723,stroke-width:1.5px,color:#000000;
+
+    %% Input Node
+    A["LINCS L1000 Profile"]:::inputStyle
+
+    %% MLP Encoder Container
+    subgraph MLP_Encoder ["LincsEncoder"]
+        L1["Linear Layer"]:::defaultStyle
+        N1["BatchNorm1d + ReLU"]:::defaultStyle
+        D1["Dropout"]:::defaultStyle
+        L2["Linear Layer"]:::defaultStyle
+        N2["BatchNorm1d + ReLU"]:::defaultStyle
+        
+        L1 --> N1
+        N1 --> D1
+        D1 --> L2
+        L2 --> N2
+    end
+
+    A --> L1
+    
+    %% Output Node
+    O["Final LINCS
+    Functional Vector"]:::outputStyle
+    
+    N2 --> O
+
+    %% Container styling
+    style MLP_Encoder fill:#e1d5e7,stroke:#b854d4,stroke-width:1.5px,stroke-dasharray: 5 5,color:#b854d4

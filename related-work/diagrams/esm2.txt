@@ -1,0 +1,39 @@
+graph TD
+    %% Styling definitions
+    classDef inputStyle fill:#dae8fc,stroke:#6c8ebf,stroke-width:1.5px,color:#000000;
+    classDef defaultStyle fill:#ffffff,stroke:#333333,stroke-width:1.5px,color:#000000;
+    classDef outputStyle fill:#e2f0d9,stroke:#385723,stroke-width:1.5px,color:#000000;
+
+    %% Input Node
+    A["Protein Sequence"]:::inputStyle
+
+    %% Processor Container (Replacing CNN blocks)
+    subgraph Processor ["Pre-computed Features Lookup                                     "]
+        B["Cached ESM-2 Embedding
+        "]:::defaultStyle
+    end
+
+    A --> Processor
+
+    %% Projection Head Container (Replacing Masked Pooling)
+    subgraph Projection_Head ["Trainable Projection Head                                     "]
+        L["Linear Layer
+        "]:::defaultStyle
+        N["Layer Normalization"]:::defaultStyle
+        R["ReLU Activation"]:::defaultStyle
+        
+        L --> N
+        N --> R
+    end
+
+    B --> Projection_Head
+    
+    %% Output Node
+    O["Final Protein
+    Representation Vector"]:::outputStyle
+    
+    R --> O
+
+    %% Container styling
+    style Processor fill:#fff2cc,stroke:#d6b656,stroke-width:1.5px,stroke-dasharray: 5 5,color:#d6b656
+    style Projection_Head fill:#e1d5e7,stroke:#b854d4,stroke-width:1.5px,stroke-dasharray: 5 5,color:#b854d4
