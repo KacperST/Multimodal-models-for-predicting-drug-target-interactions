@@ -34,6 +34,7 @@ smiles_options = {
     "gcn": {"type": "gcn", "params": {"hidden_dim": 128, "out_dim": 128, "num_layers": 3, "dropout": 0.5}},
     "fp": {"type": "fingerprint_mlp", "params": {"fp_type": "ecfp", "fp_params": {"radius": 2, "fp_size": 1024}, "hidden_dim": 256, "out_dim": 128, "dropout": 0.5}},
     "chembert": {"type": "chembert", "params": {"cache_path": "datasets/ChemBERTa-zinc-base-v1.pt", "out_dim": 128}},
+    "rdkit_desc": {"type": "rdkit_descriptors", "params": {"cache_path": "datasets/rdkit_descriptors.pt", "hidden_dim": 256, "out_dim": 128, "dropout": 0.5}},
     "lincs": {"type": "lincs", "params": {"cache_path": "datasets/lincs_profiles.pt", "smiles_pert_map_path": "datasets/smiles_to_pert_id.json", "hidden_dim": 128, "out_dim": 128, "dropout": 0.5}},
     "lincs_graph": {"type": "lincs_graph", "params": {"cache_path": "datasets/lincs_profiles.pt", "smiles_pert_map_path": "datasets/smiles_to_pert_id.json", "hidden_dim": 128, "out_dim": 128, "num_layers": 2, "theta": 1.0, "dropout": 0.5}}
 }
