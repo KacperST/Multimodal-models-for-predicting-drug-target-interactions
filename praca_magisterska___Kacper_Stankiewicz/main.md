@@ -1,8 +1,82 @@
 # Introduction
 
+Traditional drug discovery is a time-consuming and costly process. Each
+individual experiment carries a high risk of failure, which increases
+overall costs and slows the development of new treatments. To address
+this, researchers have been developing computational methods to assist
+experimental screening by suggesting drug-target pairs with a high
+probability of interaction and discarding those unlikely to bind. Neural
+networks are now a central tool for solving the Drug-Target Interaction
+(DTI) prediction problem. Advanced architectures assist researchers in
+their decision-making and contribute to the faster development of
+life-saving therapies.
+
 ## Motivation
 
+Current neural network architectures for DTI prediction focus primarily
+on building a single, best-performing model. Increasingly complex models
+have been proposed, achieving progressively better generalization.
+However, the majority of these solutions rely on simple, static
+representations of molecules. A chemical compound may be encoded as a
+character string, while a protein is typically described as a linear
+sequence of amino acids. These raw data are processed in various ways:
+hashed into fixed-length feature vectors, converted into molecular
+graphs, or passed through convolutional networks. This variety of
+processing strategies has produced a wide range of models, yet a key
+question remains unanswered: *which combinations of these modalities
+genuinely complement each other and provide new information, and which
+merely introduce redundant features?*
+
+Furthermore, chemical compounds and proteins do not exist in isolation.
+They function in a dynamic biological environment. Beyond structural
+representations alone, it is therefore valuable to provide a model with
+biological domain knowledge that describes how a drug and a protein
+affect a living cell. Transcriptomic data, such as gene expression
+profiles from the LINCS L1000 database, capture these downstream
+functional consequences and offer a fundamentally different perspective
+on drug activity that static structural descriptors cannot provide.
+
 ## Research Objectives
+
+In light of these gaps in the literature, this thesis focuses primarily
+on a systematic comparison of different molecular representations,
+fusion strategies, and biological priors for Drug-Target Interaction
+prediction. The central goal is to determine which modality combinations
+genuinely contribute predictive information, and which lead only to
+feature redundancy. The experiments are divided into three phases:
+
+- **Phase 1** focuses on comparing representations and models built from
+  two fundamental modalities: the chemical structure of the ligand and
+  the amino acid sequence of the protein. These are the most common
+  modalities in the DTI literature. Both can be represented in multiple
+  ways. The ligand can be encoded as a molecular graph, as a
+  fixed-length fingerprint vector, or processed by a pre-trained
+  transformer model. The protein can be processed as a local sequence by
+  a convolutional network, or as a full sequence passed through a
+  protein language model. In this phase, the fusion mechanism is kept
+  simple and MLP-based, and large language models are used in inference
+  mode only, without fine-tuning.
+
+- **Phase 2** focuses on refining the best-performing architectures from
+  Phase 1. Given the large number of encoder combinations and the
+  computational cost of training, only the top models are selected for
+  more advanced experiments. Specifically, the pre-trained language
+  models are fine-tuned using Low-Rank Adaptation (LoRA), and the
+  encoder fusion is performed via a Cross-Attention mechanism rather
+  than a standard MLP.
+
+- **Phase 3** introduces biological domain knowledge in the form of gene
+  expression profiles from the LINCS L1000 database. Various encoder
+  combinations are trained alongside this transcriptomic modality to
+  evaluate whether the additional biological signal improves predictive
+  performance, and in which architectural contexts it is most
+  beneficial.
+
+The findings of this work are intended to serve as a practical reference
+for researchers designing future DTI architectures, offering
+evidence-based guidance on which modality combinations provide
+complementary information and which encoders can be safely omitted
+without a loss in predictive quality.
 
 # Related work
 
@@ -31,7 +105,7 @@ leveraging machine learning and, more recently, deep learning
 Most deep learning models treat DTI as a unimodal or bimodal task, where
 the primary modalities are the 1D compound structure and the 1D protein
 sequence. The Simplified Molecular Input Line Entry System (SMILES)
-[@weininger1988smiles], introduced by David Weininger, is a rigorous
+[@weininger1988smiles], introduced by David Weininger, is a precise
 chemical notation system rooted in molecular graph theory. It encodes a
 molecular graph into a linear string using a grammar consisting of
 atomic symbols and bond identifiers (e.g., \"-\" for single bonds, \"=\"
@@ -226,7 +300,7 @@ constructed their own model:
 The authors emphasize the high accuracy of this model, as well as the
 low time and memory resources required for its training.
 
-### DTIGCCN
+#### DTIGCCN
 
 While the majority of the aforementioned models heavily rely on static
 sequence and structural representations, other approaches attempt to
@@ -380,14 +454,14 @@ for model evaluation.
 ### Dataset Description
 
 In this study, the primary dataset was constructed using records from
-BindingDB[^1] - a public and comprehensive database of measured binding
-affinities focusing on the interactions of proteins with drug-like
-molecules. The data were collected using a variety of measurement
-techniques, including enzyme inhibition and kinetics, isothermal
-titration calorimetry, and NMR. It contains 3,187,250 binding data
-points for 11,417 proteins and over 1,404,415 drug-like molecules. The
-dataset contains more than 50 columns, however only a specific subset of
-features is relevant for the proposed predictive modeling:
+BindingDB[^1] - aa public database of measured binding affinities
+focusing on the interactions of proteins with drug-like molecules. The
+data were collected using a variety of measurement techniques, including
+enzyme inhibition and kinetics, isothermal titration calorimetry, and
+NMR. It contains 3,187,250 binding data points for 11,417 proteins and
+over 1,404,415 drug-like molecules. The dataset contains more than 50
+columns, however only a specific subset of features is relevant for the
+proposed predictive modeling:
 
 - **Ligand SMILES** -- the chemical structure of a drug-like molecule
   represented in the 1D SMILES format (as described in the previous
@@ -397,11 +471,10 @@ features is relevant for the proposed predictive modeling:
   target protein. In multi-modal learning, this continuous string of
   amino acids acts as the raw biological input for the protein encoder.
 
-- **$K_i$ (nM)** -- the inhibition constant, which indicates how
-  strongly a molecule binds to and blocks target receptors. It
-  represents the exact concentration needed to fill 50% of the target
-  sites. Lower $K_i$ values indicate higher binding affinity (i.e., a
-  stronger interaction between the drug and the target).
+- **$K_i$ (nM)** -- the inhibition constant, representing the absolute
+  dissociation constant of the inhibitor-target complex. Lower $K_i$
+  values indicate higher binding affinity (i.e., a stronger interaction
+  between the drug and the target).
 
 In the original database, the target is distributed between multiple
 columns, each column representing one piece of the protein chain. For
@@ -493,9 +566,9 @@ the scaffold split.
 Traditional data splitting is not recommended for drug-target
 interaction tasks. Similar molecules that differ, for example, by only a
 few atoms and have similar properties, may occur in both the training
-data and the test data. To ensure a robust and realistic evaluation of
-the predictive models, a scaffold splitting strategy was implemented for
-the dataset partitioning. Unlike standard random splitting, which often
+data and the test data. To ensure a realistic evaluation of the
+predictive models, a scaffold splitting strategy was implemented for the
+dataset partitioning. Unlike standard random splitting, which often
 leads to overly optimistic performance estimates due to structural
 similarity between the training and test sets, scaffold splitting groups
 molecules based on their core two-dimensional frameworks.
@@ -645,7 +718,7 @@ $1\,\mu\text{M}$) commonly reported in bioactivity databases. Because
 the classification threshold bisects a densely populated region of the
 distribution, compounds with affinities near $\text{p}K_i = 7.0$
 represent challenging borderline cases where subtle experimental
-measurement noise can flip binary labels. The boxplot further confirms
+measurement noise can flip binary labels. The boxplot further indicates
 balanced class spreads while highlighting a long tail of ultra-potent
 binders in the active class reaching $\text{p}K_i > 12$.
 
@@ -659,7 +732,7 @@ splitting strategy, it was imperative to understand the chemical
 diversity at the structural core level. A scaffold represents the core
 ring system of a molecule based on Murcko decomposition. If a small
 number of scaffolds heavily dominate a dataset, machine learning models
-run a severe risk of overfitting to those specific chemotypes.
+run a high risk of overfitting to those specific chemotypes.
 
 <figure id="fig:scaffold_analysis" data-latex-placement="htbp">
 <img src="./img/stats/scaffold_analysis.png" style="height:35.0%" />
@@ -678,7 +751,7 @@ distribution of molecules per scaffold (Figure
 reference="fig:scaffold_analysis"}) reveals a healthy, long-tail
 structural diversity. By quantifying how many distinct scaffolds are
 required to cover 50% and 80% of the unique molecules, the analysis
-confirms that the chemical space is broad and heterogeneous.
+shows that the chemical space is broad and heterogeneous.
 
 ### Physicochemical Properties and Structural Complexity
 
@@ -711,7 +784,7 @@ rotatable bonds.
 
 To ensure that the predictive models learn fundamental binding
 interactions rather than exploiting biological artifacts, the amino acid
-composition across all protein sequences was rigorously compared between
+composition across all protein sequences was carefully compared between
 the Active and Inactive classes.
 
 <figure id="fig:amino_acid_composition" data-latex-placement="H">
@@ -810,8 +883,8 @@ affected by artificial zero padding values. To mitigate this problem, a
 max pooling layer is applied. This method converts zero padding values
 with $-inf$ values to ensure only valid amino-acids contribute to
 feature extraction. Finally, the outputs of each pooling layer are
-concatenated. This results in a robust 384-dimensional vector that
-captures essential biological properties of the target protein.
+concatenated. This results in a 384-dimensional vector that captures
+essential biological properties of the target protein.
 
 ## Multi-modal Models Utilizing Advanced Descriptors
 
@@ -1036,7 +1109,7 @@ containing exactly one drug encoder and one protein encoder (for
 example, a Drug GCN paired with a Protein CNN). From these baselines,
 the architecture was incrementally expanded by adding one encoder at a
 time. This step-by-step permutation strategy culminated in a fully
-loaded, five-encoder architecture that utilized all available processing
+loaded five-encoder architecture that utilized all available processing
 pathways simultaneously. By building the models in this structured way,
 it was possible to track the exact performance of every single data
 modality and its corresponding model.
@@ -1081,7 +1154,12 @@ $\text{Dropout} = 0.3 + 0.05 \times (N - 2)$, where $N$ is the total
 number of encoders. As a result, a simple dual-encoder model used a
 dropout rate of 0.3, while the most complex model with five encoders
 used a dropout rate of 0.45. This guaranteed that larger models received
-stronger regularization.
+stronger regularization. However, it is important to note that while
+this adaptive mechanism aims to prevent overfitting in larger
+architectures, it introduces an additional confounding variable.
+Therefore, performance differences between simple and complex models are
+a combined effect of both the varying encoder sets and the differing
+regularization strengths.
 
 #### Phase 2: Cross-Attention Integration and Parameter-Efficient Fine-Tuning
 
@@ -1155,14 +1233,14 @@ the exact predictive benefit of adding this transcriptomic information.
 ## Phase 1 Results
 
 Phase 1 of the experiments covered 21 distinct multi-modal architectures
-utilizing simple Multilayer Perceptron (MLP) fusion. The comprehensive
+utilizing simple Multilayer Perceptron (MLP) fusion. The complete
 results are presented in Table
 [\[tab:fusion_models_auc\]](#tab:fusion_models_auc){reference-type="ref"
 reference="tab:fusion_models_auc"}. All six top-performing architectures
 (sorted by AUC) include the Graph Convolutional Neural Network (GCN)
 encoder. This indicates that explicit molecular graph
 topology-representing atoms as nodes and bonds as edges-provides a
-significantly stronger inductive bias for Drug-Target Interaction
+significantly stronger predictive signal for Drug-Target Interaction
 prediction than either fixed-length molecular fingerprints or contextual
 SMILES representations derived from pre-trained language models.
 
@@ -1204,7 +1282,7 @@ potential candidates.
 
 On the opposite end of the spectrum, models heavily reliant on molecular
 fingerprints act completely differently. For example, the
-`fp_chembert_and_esm2` model boasts the highest Precision (0.8569),
+`fp_chembert_and_esm2` model achieves the highest Precision (0.8569),
 meaning it is highly confident in its positive predictions. However, its
 Recall drops to 0.6749. This makes the model conservative: it minimizes
 false alarms but misses about a third of all valid drug-target pairs.
@@ -1228,7 +1306,8 @@ of the CNN appear to be much more efficient at extracting the specific,
 localized patterns relevant to binding affinity. Furthermore, the large
 size of the ESM-2 embeddings may introduce excessive noise during the
 simple MLP concatenation phase, whereas the compact features generated
-by the CNN integrate much more smoothly with the drug representations.
+by the CNN integrate much more effectively with the drug
+representations.
 
 ::: {#tab:cnn_and_esm2}
 +-------------------+------------------------+-------------------------+
@@ -1483,7 +1562,7 @@ compared to the Phase 1 baseline.
 </figure>
 
 In contrast, Figure [4.5](#fig:phase2_overloaded){reference-type="ref"
-reference="fig:phase2_overloaded"} illustrates the severe impact of
+reference="fig:phase2_overloaded"} illustrates the negative impact of
 modal overload on the cross-attention mechanism, using the fully
 multimodal architecture (`gcn_fp_chembert_and_cnn_esm2`). Theoretical
 intuition suggests that aggregating multiple distinct representations by
@@ -1493,7 +1572,7 @@ However, when forced to align five distinct encoders simultaneously, the
 latent space (Figure [4.5](#fig:phase2_overloaded){reference-type="ref"
 reference="fig:phase2_overloaded"}d) collapses into a noisy, entangled
 cluster. The increased number of encoder outputs competing for attention
-impairs the module's ability to establish a robust decision boundary.
+impairs the module's ability to establish a clear decision boundary.
 Consequently, the Confusion Matrix (Figure
 [4.5](#fig:phase2_overloaded){reference-type="ref"
 reference="fig:phase2_overloaded"}c) shows the highest number of False
@@ -1559,7 +1638,7 @@ Visual diagnostics of the probability distributions (Figure
 reference="fig:prob_distribution"}) reveal a significant shift in the
 decision-making strategy induced by the Cross-Attention mechanism. The
 Phase 2 architecture (`gcn_chembert_and_cnn`) became noticeably more
-aggressive in predicting active interactions. It successfully identified
+inclined in predicting active interactions. It successfully identified
 nearly 1,000 more True Positives (36,950 compared to the baseline's
 35,994) and visibly reduced the number of missed interactions, with
 False Negatives dropping from 8,786 to 7,830. In a practical drug
@@ -1599,7 +1678,7 @@ limitations.</figcaption>
 
 Detailed feature distribution plots (Figure
 [4.7](#fig:feature_distributions){reference-type="ref"
-reference="fig:feature_distributions"}) confirm that both models
+reference="fig:feature_distributions"}) indicate that both models
 successfully captured the genuine physicochemical differences between
 active and inactive compounds. When comparing the distributions of True
 Positives (green bars) and True Negatives (blue bars), a clear
@@ -1613,31 +1692,31 @@ the observation from §3.3.8 that active compounds tend to be
 structurally more complex. A common risk in such imbalanced feature
 distributions is shortcut learning, where the model might simply equate
 larger molecular size with activity. However, comparing the
-distributions of True Positives versus False Positives confirms that
-this is not the case. The model successfully avoids this heuristic: it
+distributions of True Positives versus False Positives shows that this
+is not the case. The model successfully avoids this heuristic: it
 correctly identifies large inactive molecules as True Negatives (visible
 at 3-4 rings) rather than misclassifying them as False Positives. This
-proves that the networks did not merely memorize a size-related bias,
+suggests that the networks did not merely memorize a size-related bias,
 but genuinely learned deep biochemical principles differentiating active
-targets from decoys.
+targets from weak binders.
 
 ### Dominance of the GCN Encoder and Structural Bottlenecks
 
 Initial hypotheses suggested that integrating the ChemBERTa language
-model might mitigate the baseline's struggles with exceptionally large
-or highly flexible molecules. However, the comparative feature
-distributions reveal that the geometric constraints of the Graph
-Convolutional Network remain the dominant factor in generating errors.
+model might mitigate the baseline's struggles with large or highly
+flexible molecules. However, the comparative feature distributions
+reveal that the geometric constraints of the Graph Convolutional Network
+remain the dominant factor in generating errors.
 
 For features such as molecular weight, count of heavy atoms, and the
 number of rotatable bonds, the shapes and locations of the error
 distributions remain nearly identical across both architectures. Both
 models exhibit noticeable right-tail error distributions for these
-metrics. This visually confirms that the GCN struggles to effectively
-propagate interaction signals across very extensive or highly flexible
-molecular graphs. While the cross-attention mechanism altered the global
-decision boundary, it did not fundamentally repair the geometric
-signal-propagation bottlenecks inherent to the GCN itself.
+metrics. This visually demonstrates that the GCN struggles to
+effectively propagate interaction signals across very extensive or
+highly flexible molecular graphs. While the cross-attention mechanism
+altered the global decision boundary, it did not fundamentally repair
+the geometric signal-propagation bottlenecks inherent to the GCN itself.
 
 ### Aromaticity Bias
 
@@ -1660,8 +1739,8 @@ errors related to the protein sequence length closely follows the
 distribution of correct predictions across both architectures. The
 overlaid density plots show no significant deviation regardless of the
 fusion strategy applied. This provides empirical evidence that the local
-1D-CNN protein encoder is robust against variations in target size. It
-further supports the intuition that drug-target affinity is primarily
+1D-CNN protein encoder is resilient against variations in target size.
+It further supports the intuition that drug-target affinity is primarily
 governed by highly localized sequence motifs and specific binding
 pockets, rather than by the global length of the protein chain.
 
@@ -1717,6 +1796,70 @@ supplementary prior rather than a standalone descriptor.
   : Performance of Models Using Exclusively LINCS L1000 Expression
   Profiles
 :::
+
+It should be noted that the overall performance in Phase 3 is noticeably
+lower than in Phases 1 and 2. This drop is probably a direct result of
+the much smaller dataset size. Training deep neural networks on just
+27,000 interactions instead of the original 450,000 makes it
+significantly harder for the models to generalize. Therefore, while the
+relative improvements show that transcriptomic data is useful, the
+absolute scores simply reflect the difficulty of training complex models
+on limited data.
+
+## Experimental Setup and Training Details
+
+To ensure reproducibility and transparency, the specific hyperparameters
+and training configurations used across all three experimental phases
+are detailed below. All models were implemented in Python using the
+PyTorch (v2.11.0) and PyTorch Geometric (v2.7.0) frameworks, alongside
+the HuggingFace Transformers (v5.7.0) and PEFT (v0.19.1) libraries. The
+networks were trained with the AdamW optimizer, utilizing a Binary
+Cross-Entropy (BCE) loss function.
+
+**General Setup and Phase 1**\
+During the initial benchmarking phase, the models were trained for a
+maximum of 150 epochs using a batch size of 512. An early stopping
+mechanism was employed with a patience of 10 epochs to prevent
+overfitting. The global learning rate was set to $3 \times 10^{-4}$ with
+a weight decay of $1 \times 10^{-5}$. The output embeddings from all
+structural and sequence encoders were standardized to a hidden dimension
+of 256 before fusion. To ensure a fair comparison across architectures
+with varying complexity, a dynamic regularization strategy was applied
+in the MLP fusion block. The baseline dropout was set to $0.3$ for
+dual-encoder models, increasing by $0.05$ for each additional modality
+(e.g., reaching $0.45$ for a 5-encoder configuration).
+
+**Phase 2: Parameter-Efficient Fine-Tuning**\
+The introduction of Cross-Attention and LoRA fine-tuning required a
+modified optimization strategy. Due to the increased computational
+overhead and memory footprint of the attention mechanisms, the batch
+size was reduced to 256. The maximum number of epochs was lowered to 30,
+with early stopping triggered after 8 epochs of no improvement. This
+epoch limit was necessary due to computational constraints. Despite
+extensive PyTorch code optimizations and the utilization of
+high-performance GPU nodes from the Cyfronet Helios supercomputer, the
+complex models required approximately 1.5 hours per epoch to train.
+Consequently, a single model could take up to 35-40 hours to converge,
+making an epoch cap essential to successfully evaluate all 10
+architectures. A dual learning rate strategy was implemented to maintain
+pre-trained stability: the base architecture was trained with a learning
+rate of $1 \times 10^{-4}$, while the newly injected LoRA adapters
+(configured with rank $r=16$, $\alpha=16$, and an internal dropout of
+$0.1$) were optimized with a significantly lower learning rate of
+$2 \times 10^{-5}$. The global weight decay was increased to $0.01$ to
+provide stronger regularization.
+
+**Phase 3: LINCS L1000 Integration**\
+Integrating dense biological priors required further architectural
+adjustments. To prevent the 978-dimensional transcriptomic vectors from
+dominating the learning process, the standard embedding dimension for
+all encoders (including the CNN and GCN) was bottlenecked from 256 down
+to 128. Consequently, the batch size was further reduced to 128. The
+models were optimized with a learning rate of $5 \times 10^{-5}$ and a
+weight decay of $1 \times 10^{-5}$. The early stopping patience was
+restored to 10 epochs (out of a maximum 150). Reducing dataset to
+approximately 27,000 interactions caused models to ovefit easily, so the
+droput had to be increased to 0.5
 
 # Summary and Conclusions
 
