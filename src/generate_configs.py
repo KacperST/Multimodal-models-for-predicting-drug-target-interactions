@@ -45,23 +45,25 @@ protein_options = {
 
 import itertools
 
-# generate combinations
-smiles_keys = list(smiles_options.keys())
+# Ręcznie wybrana lista 13 najważniejszych kombinacji (odcinamy szum, zostawiamy najlepsze z Fazy 1 + nowości)
+smiles_combos = [
+    ["rdkit_desc"],                                         # Baseline: Samo RDKit
+    ["fp", "lincs", "rdkit_desc"],                          # FP + LINCS + RDKit
+    ["gcn", "lincs", "rdkit_desc"],                         # GCN + LINCS + RDKit
+    ["chembert", "lincs", "rdkit_desc"],                    # ChemBERT + LINCS + RDKit
+    ["fp", "gcn", "lincs", "rdkit_desc"],                   # FP + GCN + LINCS + RDKit
+    ["fp", "chembert", "lincs", "rdkit_desc"],              # FP + ChemBERT + LINCS + RDKit
+    ["gcn", "chembert", "lincs", "rdkit_desc"],             # GCN + ChemBERT + LINCS + RDKit
+    ["fp", "gcn", "chembert", "lincs", "rdkit_desc"]        # FP + GCN + ChemBERT + LINCS + RDKit
+]
+
 protein_keys = list(protein_options.keys())
-
-smiles_combos = []
-for i in range(1, len(smiles_keys) + 1):
-    for combo in itertools.combinations(smiles_keys, i):
-        if "lincs" in combo and "lincs_graph" in combo:
-            continue
-        smiles_combos.append(list(combo))
-
 protein_combos = []
 for i in range(1, len(protein_keys) + 1):
     for combo in itertools.combinations(protein_keys, i):
         protein_combos.append(list(combo))
 
-out_dir = Path("./configs/lincs")
+out_dir = Path("./configs/descriptors")
 out_dir.mkdir(parents=True, exist_ok=True)
 
 import os
