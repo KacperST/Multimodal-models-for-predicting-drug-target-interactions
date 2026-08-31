@@ -158,3 +158,26 @@ Epoch 041 | time=2.9s | train_loss=0.1420 | val_loss=0.5989 | val_auc=0.8188
 Epoch 042 | time=2.9s | train_loss=0.1426 | val_loss=0.6060 | val_auc=0.8168
 Epoch 043 | time=2.9s | train_loss=0.1384 | val_loss=0.6060 | val_auc=0.8175
 Epoch 044 | time=3.0s | train_loss=0.1386 | val_loss=0.6155 | val_auc=0.8170
+Epoch 045 | time=2.9s | train_loss=0.1390 | val_loss=0.6003 | val_auc=0.8199
+  ✓ New best model (epoch 45, val_loss=0.6003, val_auc=0.8199) saved to checkpoints/fp_chembert_lincs_rdkit_desc_vs_cnn.pt
+Epoch 046 | time=2.9s | train_loss=0.1388 | val_loss=0.6049 | val_auc=0.8196
+Epoch 047 | time=2.9s | train_loss=0.1393 | val_loss=0.6053 | val_auc=0.8185
+Epoch 048 | time=3.0s | train_loss=0.1417 | val_loss=0.6069 | val_auc=0.8181
+Epoch 049 | time=3.1s | train_loss=0.1377 | val_loss=0.6079 | val_auc=0.8180
+Epoch 050 | time=3.0s | train_loss=0.1372 | val_loss=0.6047 | val_auc=0.8197
+Epoch 051 | time=3.0s | train_loss=0.1379 | val_loss=0.6053 | val_auc=0.8190
+Epoch 052 | time=2.9s | train_loss=0.1379 | val_loss=0.6062 | val_auc=0.8188
+Epoch 053 | time=3.0s | train_loss=0.1362 | val_loss=0.6141 | val_auc=0.8182
+Epoch 054 | time=3.0s | train_loss=0.1404 | val_loss=0.6082 | val_auc=0.8192
+Epoch 055 | time=3.0s | train_loss=0.1397 | val_loss=0.6091 | val_auc=0.8188
+Early stopping — no improvement for 10 epochs
+
+Best model: epoch 45, val_loss=0.6091, val_auc=0.8199
+
+═══ Test Results ═══
+           auc: 0.7343
+         auprc: 0.6704
+            f1: 0.6582
+     precision: 0.6322
+        recall: 0.6863
+          loss: 0.7630
