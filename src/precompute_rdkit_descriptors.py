@@ -33,7 +33,7 @@ def compute_descriptors(smiles: str) -> torch.Tensor | None:
     desc_dict = Descriptors.CalcMolDescriptors(mol)
     values = []
     for v in desc_dict.values():
-        if v is None or (isinstance(v, float) and math.isnan(v)):
+        if v is None or (isinstance(v, float) and (math.isnan(v) or math.isinf(v))):
             values.append(0.0)
         else:
             values.append(float(v))

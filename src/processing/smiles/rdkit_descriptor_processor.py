@@ -26,13 +26,27 @@ class RDKitDescriptorProcessor(InputProcessor):
 
     NUM_DESCRIPTORS = 210
 
-    def __init__(self, cache_path: str | None = None) -> None:
+    def __init__(self, cache_path: str | None = None, scale: bool = True) -> None:
         self._cache: dict[str, torch.Tensor] = {}
+        self.scale = scale
+        self._min: torch.Tensor | None = None
+        self._range: torch.Tensor | None = None
+
         if cache_path is not None:
             self._cache = torch.load(cache_path, map_location="cpu", weights_only=False)
             # Determine dim from first cached entry
             first = next(iter(self._cache.values()))
             self._dim = first.shape[0]
+
+            if self.scale:
+                print(f"Fitting MinMaxScaler on {len(self._cache)} cached RDKit descriptors...")
+                all_tensors = torch.stack(list(self._cache.values()))
+                all_tensors = torch.nan_to_num(all_tensors, nan=0.0, posinf=1e5, neginf=-1e5)
+                all_tensors = torch.clamp(all_tensors, min=-1e5, max=1e5)
+                
+                self._min = all_tensors.min(dim=0)[0]
+                self._max = all_tensors.max(dim=0)[0]
+                self._range = torch.clamp(self._max - self._min, min=1e-8)
         else:
             self._dim = self.NUM_DESCRIPTORS
 
@@ -68,7 +82,7 @@ class RDKitDescriptorProcessor(InputProcessor):
         desc_dict = Descriptors.CalcMolDescriptors(mol)
         values = []
         for v in desc_dict.values():
-            if v is None or (isinstance(v, float) and math.isnan(v)):
+            if v is None or (isinstance(v, float) and (math.isnan(v) or math.isinf(v))):
                 values.append(0.0)
             else:
                 values.append(float(v))
@@ -78,4 +92,15 @@ class RDKitDescriptorProcessor(InputProcessor):
         return tensor
 
     def collate(self, batch: list[torch.Tensor]) -> torch.Tensor:
-        return torch.stack(batch)
+        tensor = torch.stack(batch)
+        # Zabezpieczenie przed overflow w BatchNorm:
+        # 1. Zastąp NaN -> 0, inf -> 1e5, -inf -> -1e5 (dla starych cache'ów)
+        tensor = torch.nan_to_num(tensor, nan=0.0, posinf=1e5, neginf=-1e5)
+        # 2. Przytnij astronomicznie duże wartości (np. 10^21)
+        tensor = torch.clamp(tensor, min=-1e5, max=1e5)
+
+        # 3. Zastosuj MinMaxScaler do zakresu [0, 1] jeśli włączony
+        if self.scale and self._min is not None and self._range is not None:
+            tensor = (tensor - self._min) / self._range
+            
+        return tensor
