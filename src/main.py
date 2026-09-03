@@ -15,8 +15,10 @@ Usage::
 from __future__ import annotations
 
 import argparse
+import random
 from pathlib import Path
 
+import numpy as np
 import polars as pl
 import torch
 import torch.nn as nn
@@ -263,10 +265,30 @@ def main() -> None:
         default=None,
         help="Filename for the saved checkpoint (e.g. gcn_cnn.pt). Defaults to config name.",
     )
+    parser.add_argument(
+        "--seed",
+        type=int,
+        default=None,
+        help="Global random seed for PyTorch, NumPy, and random. Optional.",
+    )
     args = parser.parse_args()
 
+    if args.seed is not None:
+        print(f"Setting global random seed to {args.seed}")
+        random.seed(args.seed)
+        np.random.seed(args.seed)
+        torch.manual_seed(args.seed)
+        if torch.cuda.is_available():
+            torch.cuda.manual_seed_all(args.seed)
+
     if args.model_name is None:
-        args.model_name = Path(args.config).stem + ".pt"
+        if args.seed is not None:
+            args.model_name = Path(args.config).stem + f"_seed{args.seed}.pt"
+        else:
+            args.model_name = Path(args.config).stem + ".pt"
+    else:
+        if args.seed is not None:
+            args.model_name = args.model_name.replace(".pt", "") + f"_seed{args.seed}.pt"
 
     # ── Load config ──────────────────────────────────────────────
     with open(args.config) as f:
