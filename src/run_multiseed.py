@@ -6,9 +6,12 @@ from pathlib import Path
 import re
 import numpy as np
 
-def run_multiseed_for_config(config_path, seeds, env):
+def run_multiseed_for_config(config_path, seeds, env, split_strategy=None):
+    strategy_label = f"_{split_strategy}" if split_strategy else ""
     print(f"\n============================================================")
     print(f"Starting Multi-Seed Training for: {config_path.name}")
+    if split_strategy:
+        print(f"Split strategy override: {split_strategy}")
     print(f"Seeds to evaluate: {seeds}")
     print(f"============================================================")
 
@@ -20,7 +23,7 @@ def run_multiseed_for_config(config_path, seeds, env):
         log_dir = Path("logs") / config_path.parent.name if config_path.parent.name != "." else Path("logs")
     log_dir.mkdir(parents=True, exist_ok=True)
     
-    report_file = log_dir / f"{config_path.stem}_multiseed_report.txt"
+    report_file = log_dir / f"{config_path.stem}{strategy_label}_multiseed_report.txt"
     
     metrics = {
         "auc": [],
@@ -33,13 +36,15 @@ def run_multiseed_for_config(config_path, seeds, env):
 
     for i, seed in enumerate(seeds, 1):
         print(f"[{i}/{len(seeds)}] Running training with seed {seed}...")
-        log_file = log_dir / f"{config_path.stem}_seed{seed}.log"
+        log_file = log_dir / f"{config_path.stem}{strategy_label}_seed{seed}.log"
         
         cmd = [
             "uv", "run", "main.py",
             "--config", str(config_path),
             "--seed", str(seed)
         ]
+        if split_strategy:
+            cmd.extend(["--split-strategy", split_strategy])
         
         with open(log_file, "w") as f:
             result = subprocess.run(cmd, stdout=f, stderr=subprocess.STDOUT, env=env)
@@ -77,6 +82,8 @@ def run_multiseed_for_config(config_path, seeds, env):
     
     report_lines = []
     report_lines.append(f"Model: {config_path.name}")
+    if split_strategy:
+        report_lines.append(f"Split strategy: {split_strategy}")
     report_lines.append(f"Seeds: {seeds}")
     report_lines.append(f"Runs completed successfully: {len(metrics['auc'])}/{len(seeds)}\n")
     
@@ -99,6 +106,9 @@ def main():
     parser = argparse.ArgumentParser(description="Run training multiple times with different seeds for one config or a whole directory.")
     parser.add_argument("target", type=str, help="Path to a single config file or a directory (e.g. configs/lincs/)")
     parser.add_argument("--seeds", type=int, nargs="+", default=[42, 123, 999, 1024, 2026], help="List of seeds to use")
+    parser.add_argument("--split-strategy", type=str, default=None,
+                        choices=["scaffold", "cold_target", "cold_both"],
+                        help="Override split strategy. Options: scaffold (K2), cold_target (K3), cold_both (K4).")
     args = parser.parse_args()
 
     target_path = Path(args.target)
@@ -124,7 +134,7 @@ def main():
 
     for i, config_path in enumerate(configs, 1):
         print(f"\n[{i}/{len(configs)}] Processing configuration: {config_path.name}")
-        run_multiseed_for_config(config_path, args.seeds, env)
+        run_multiseed_for_config(config_path, args.seeds, env, split_strategy=args.split_strategy)
 
     print("\n------------------------------------------------------------")
     print("Wszystkie zadania wielokrotnego treningu (multi-seed) zostały zakończone!")

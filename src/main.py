@@ -32,6 +32,8 @@ from data.transform import (
     remove_duplicates,
     remove_nulls,
     train_test_val_split,
+    train_val_test_split_cold_both,
+    train_val_test_split_cold_target,
     train_val_test_split_scaffold,
     tranform_ki_to_log_ki,
 )
@@ -271,6 +273,13 @@ def main() -> None:
         default=None,
         help="Global random seed for PyTorch, NumPy, and random. Optional.",
     )
+    parser.add_argument(
+        "--split-strategy",
+        type=str,
+        default=None,
+        choices=["scaffold", "cold_target", "cold_both"],
+        help="Override split strategy from config. Options: scaffold (K2), cold_target (K3), cold_both (K4).",
+    )
     args = parser.parse_args()
 
     if args.seed is not None:
@@ -297,6 +306,10 @@ def main() -> None:
     data_cfg = cfg["data"]
     train_cfg = cfg["training"]
 
+    # Override split_strategy from CLI if provided
+    if args.split_strategy is not None:
+        data_cfg["split_strategy"] = args.split_strategy
+
     # ── Device ───────────────────────────────────────────────────
     dev_str = train_cfg.get("device", "auto")
     if dev_str == "auto":
@@ -311,7 +324,18 @@ def main() -> None:
 
     # ── 2. Train / val / test split ──────────────────────────────
     ratios = data_cfg.get("split_ratios", [0.7, 0.1, 0.2])
-    train_df, val_df, test_df = train_val_test_split_scaffold(df, proportions=ratios)
+    split_strategy = data_cfg.get("split_strategy", "scaffold")
+    print(f"Split strategy: {split_strategy}")
+
+    if split_strategy == "scaffold":
+        train_df, val_df, test_df = train_val_test_split_scaffold(df, proportions=ratios)
+    elif split_strategy == "cold_target":
+        train_df, val_df, test_df = train_val_test_split_cold_target(df, proportions=ratios)
+    elif split_strategy == "cold_both":
+        train_df, val_df, test_df = train_val_test_split_cold_both(df, proportions=ratios)
+    else:
+        raise ValueError(f"Unknown split_strategy: {split_strategy}. Use 'scaffold', 'cold_target', or 'cold_both'.")
+
     print(f"Train: {train_df.height}  Val: {val_df.height}  Test: {test_df.height}")
 
     # ── 3. Build processors and encoders ─────────────────────────
