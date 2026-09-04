@@ -1,0 +1,163 @@
+Uninstalled 1 package in 7ms
+Installed 1 package in 12ms
+/net/storage/pr3/plgrid/plggmlcil/plgkstankie/vvv/Multimodal-models-for-predicting-drug-target-interactions/.venv/lib/python3.11/site-packages/outdated/__init__.py:36: UserWarning: pkg_resources is deprecated as an API. See https://setuptools.pypa.io/en/latest/pkg_resources.html. The pkg_resources package is slated for removal as early as 2025-11-30. Refrain from using this package or pin to Setuptools<81.
+  from pkg_resources import parse_version
+Setting global random seed to 42
+Using device: cuda
+Loading clean data from: /net/storage/pr3/plgrid/plggmlcil/plgkstankie/vvv/Multimodal-models-for-predicting-drug-target-interactions/src/datasets/lincs_balanced.parquet
+Dataset size: 27498
+Train: 19558  Val: 2885  Test: 5055
+SMILES encoders:  ['GCNEncoder', 'FingerprintMLPEncoder', 'LincsEncoder']
+Protein encoders: ['ProteinCNNEncoder']
+Building graph cache for 1264 SMILES...
+  0%|          | 0/1264 [00:00<?, ?it/s] 20%|█▉        | 247/1264 [00:00<00:00, 2463.55it/s] 39%|███▉      | 494/1264 [00:00<00:00, 2405.96it/s] 58%|█████▊    | 735/1264 [00:00<00:00, 2341.41it/s] 78%|███████▊  | 981/1264 [00:00<00:00, 2384.53it/s] 98%|█████████▊| 1238/1264 [00:00<00:00, 2449.57it/s]100%|██████████| 1264/1264 [00:00<00:00, 2426.68it/s]
+Valid SMILES graphs: 1264
+MultimodalDTI(
+  (smiles_encoders): ModuleList(
+    (0): GCNEncoder(
+      (atom_encoder): AtomEncoder(
+        (atom_embedding_list): ModuleList(
+          (0): Embedding(119, 128)
+          (1): Embedding(5, 128)
+          (2-3): 2 x Embedding(12, 128)
+          (4): Embedding(10, 128)
+          (5-6): 2 x Embedding(6, 128)
+          (7-8): 2 x Embedding(2, 128)
+        )
+      )
+      (convs): ModuleList(
+        (0-2): 3 x GCNConv(128, 128)
+      )
+      (bns): ModuleList(
+        (0-2): 3 x BatchNorm1d(128, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      )
+    )
+    (1): FingerprintMLPEncoder(
+      (mlp): Sequential(
+        (0): Linear(in_features=1024, out_features=256, bias=True)
+        (1): BatchNorm1d(256, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (2): ReLU()
+        (3): Dropout(p=0.5, inplace=False)
+        (4): Linear(in_features=256, out_features=128, bias=True)
+        (5): BatchNorm1d(128, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (6): ReLU()
+      )
+    )
+    (2): LincsEncoder(
+      (mlp): Sequential(
+        (0): Linear(in_features=978, out_features=128, bias=True)
+        (1): BatchNorm1d(128, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (2): ReLU()
+        (3): Dropout(p=0.5, inplace=False)
+        (4): Linear(in_features=128, out_features=128, bias=True)
+        (5): BatchNorm1d(128, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (6): ReLU()
+      )
+    )
+  )
+  (protein_encoders): ModuleList(
+    (0): ProteinCNNEncoder(
+      (embedding): Embedding(21, 128, padding_idx=0)
+      (conv_blocks): ModuleList(
+        (0): Sequential(
+          (0): Conv1d(128, 64, kernel_size=(3,), stride=(1,), padding=(1,))
+          (1): BatchNorm1d(64, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+          (2): ReLU()
+          (3): Conv1d(64, 64, kernel_size=(3,), stride=(1,), padding=(1,))
+          (4): BatchNorm1d(64, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+          (5): ReLU()
+        )
+        (1): Sequential(
+          (0): Conv1d(128, 64, kernel_size=(7,), stride=(1,), padding=(3,))
+          (1): BatchNorm1d(64, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+          (2): ReLU()
+          (3): Conv1d(64, 64, kernel_size=(7,), stride=(1,), padding=(3,))
+          (4): BatchNorm1d(64, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+          (5): ReLU()
+        )
+        (2): Sequential(
+          (0): Conv1d(128, 64, kernel_size=(15,), stride=(1,), padding=(7,))
+          (1): BatchNorm1d(64, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+          (2): ReLU()
+          (3): Conv1d(64, 64, kernel_size=(15,), stride=(1,), padding=(7,))
+          (4): BatchNorm1d(64, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+          (5): ReLU()
+        )
+      )
+    )
+  )
+  (fusion): MLPFusion(
+    (classifier): Sequential(
+      (0): Linear(in_features=576, out_features=128, bias=True)
+      (1): BatchNorm1d(128, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      (2): ReLU()
+      (3): Dropout(p=0.5, inplace=False)
+      (4): Linear(in_features=128, out_features=32, bias=True)
+      (5): BatchNorm1d(32, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      (6): ReLU()
+      (7): Dropout(p=0.5, inplace=False)
+      (8): Linear(in_features=32, out_features=1, bias=True)
+    )
+  )
+)
+Epoch 001 | time=3.4s | train_loss=0.6618 | val_loss=0.6609 | val_auc=0.6719
+  ✓ New best model (epoch 1, val_loss=0.6609, val_auc=0.6719) saved to checkpoints/gcn_fp_lincs_vs_cnn_seed42.pt
+Epoch 002 | time=2.7s | train_loss=0.5540 | val_loss=0.5991 | val_auc=0.7605
+  ✓ New best model (epoch 2, val_loss=0.5991, val_auc=0.7605) saved to checkpoints/gcn_fp_lincs_vs_cnn_seed42.pt
+Epoch 003 | time=2.7s | train_loss=0.4784 | val_loss=0.5685 | val_auc=0.7850
+  ✓ New best model (epoch 3, val_loss=0.5685, val_auc=0.7850) saved to checkpoints/gcn_fp_lincs_vs_cnn_seed42.pt
+Epoch 004 | time=2.7s | train_loss=0.4311 | val_loss=0.5495 | val_auc=0.7960
+  ✓ New best model (epoch 4, val_loss=0.5495, val_auc=0.7960) saved to checkpoints/gcn_fp_lincs_vs_cnn_seed42.pt
+Epoch 005 | time=2.7s | train_loss=0.4013 | val_loss=0.5228 | val_auc=0.8194
+  ✓ New best model (epoch 5, val_loss=0.5228, val_auc=0.8194) saved to checkpoints/gcn_fp_lincs_vs_cnn_seed42.pt
+Epoch 006 | time=2.7s | train_loss=0.3729 | val_loss=0.5148 | val_auc=0.8245
+  ✓ New best model (epoch 6, val_loss=0.5148, val_auc=0.8245) saved to checkpoints/gcn_fp_lincs_vs_cnn_seed42.pt
+Epoch 007 | time=2.8s | train_loss=0.3474 | val_loss=0.5143 | val_auc=0.8243
+Epoch 008 | time=2.7s | train_loss=0.3282 | val_loss=0.5081 | val_auc=0.8287
+  ✓ New best model (epoch 8, val_loss=0.5081, val_auc=0.8287) saved to checkpoints/gcn_fp_lincs_vs_cnn_seed42.pt
+Epoch 009 | time=2.7s | train_loss=0.3134 | val_loss=0.5127 | val_auc=0.8238
+Epoch 010 | time=2.7s | train_loss=0.2927 | val_loss=0.4921 | val_auc=0.8437
+  ✓ New best model (epoch 10, val_loss=0.4921, val_auc=0.8437) saved to checkpoints/gcn_fp_lincs_vs_cnn_seed42.pt
+Epoch 011 | time=2.7s | train_loss=0.2796 | val_loss=0.4960 | val_auc=0.8409
+Epoch 012 | time=2.7s | train_loss=0.2645 | val_loss=0.4798 | val_auc=0.8516
+  ✓ New best model (epoch 12, val_loss=0.4798, val_auc=0.8516) saved to checkpoints/gcn_fp_lincs_vs_cnn_seed42.pt
+Epoch 013 | time=2.7s | train_loss=0.2542 | val_loss=0.4979 | val_auc=0.8422
+Epoch 014 | time=2.7s | train_loss=0.2453 | val_loss=0.4917 | val_auc=0.8458
+Epoch 015 | time=2.7s | train_loss=0.2374 | val_loss=0.4802 | val_auc=0.8527
+  ✓ New best model (epoch 15, val_loss=0.4802, val_auc=0.8527) saved to checkpoints/gcn_fp_lincs_vs_cnn_seed42.pt
+Epoch 016 | time=2.7s | train_loss=0.2286 | val_loss=0.4813 | val_auc=0.8546
+  ✓ New best model (epoch 16, val_loss=0.4813, val_auc=0.8546) saved to checkpoints/gcn_fp_lincs_vs_cnn_seed42.pt
+Epoch 017 | time=2.7s | train_loss=0.2215 | val_loss=0.4868 | val_auc=0.8546
+Epoch 018 | time=2.8s | train_loss=0.2105 | val_loss=0.4896 | val_auc=0.8541
+Epoch 019 | time=2.7s | train_loss=0.1978 | val_loss=0.4941 | val_auc=0.8550
+  ✓ New best model (epoch 19, val_loss=0.4941, val_auc=0.8550) saved to checkpoints/gcn_fp_lincs_vs_cnn_seed42.pt
+Epoch 020 | time=2.7s | train_loss=0.1952 | val_loss=0.4858 | val_auc=0.8579
+  ✓ New best model (epoch 20, val_loss=0.4858, val_auc=0.8579) saved to checkpoints/gcn_fp_lincs_vs_cnn_seed42.pt
+Epoch 021 | time=2.7s | train_loss=0.1910 | val_loss=0.4851 | val_auc=0.8597
+  ✓ New best model (epoch 21, val_loss=0.4851, val_auc=0.8597) saved to checkpoints/gcn_fp_lincs_vs_cnn_seed42.pt
+Epoch 022 | time=2.8s | train_loss=0.1850 | val_loss=0.4983 | val_auc=0.8554
+Epoch 023 | time=2.7s | train_loss=0.1828 | val_loss=0.4943 | val_auc=0.8555
+Epoch 024 | time=2.7s | train_loss=0.1793 | val_loss=0.4927 | val_auc=0.8590
+Epoch 025 | time=2.8s | train_loss=0.1748 | val_loss=0.4823 | val_auc=0.8643
+  ✓ New best model (epoch 25, val_loss=0.4823, val_auc=0.8643) saved to checkpoints/gcn_fp_lincs_vs_cnn_seed42.pt
+Epoch 026 | time=2.7s | train_loss=0.1723 | val_loss=0.4871 | val_auc=0.8624
+Epoch 027 | time=2.7s | train_loss=0.1703 | val_loss=0.4855 | val_auc=0.8627
+Epoch 028 | time=2.7s | train_loss=0.1674 | val_loss=0.4948 | val_auc=0.8600
+Epoch 029 | time=2.8s | train_loss=0.1657 | val_loss=0.4988 | val_auc=0.8600
+Epoch 030 | time=2.7s | train_loss=0.1624 | val_loss=0.4895 | val_auc=0.8636
+Epoch 031 | time=2.7s | train_loss=0.1599 | val_loss=0.4996 | val_auc=0.8608
+Epoch 032 | time=2.7s | train_loss=0.1599 | val_loss=0.4986 | val_auc=0.8621
+Epoch 033 | time=2.7s | train_loss=0.1562 | val_loss=0.4916 | val_auc=0.8637
+Epoch 034 | time=2.7s | train_loss=0.1575 | val_loss=0.4934 | val_auc=0.8642
+Epoch 035 | time=2.7s | train_loss=0.1566 | val_loss=0.4961 | val_auc=0.8633
+Early stopping — no improvement for 10 epochs
+
+Best model: epoch 25, val_loss=0.4961, val_auc=0.8643
+
+═══ Test Results ═══
+           auc: 0.7404
+         auprc: 0.6892
+            f1: 0.6483
+     precision: 0.6343
+        recall: 0.6629
+          loss: 0.6926

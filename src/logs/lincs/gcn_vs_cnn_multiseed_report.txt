@@ -1,0 +1,11 @@
+Model: gcn_vs_cnn.yaml
+Seeds: [42, 123, 999, 1024, 2026]
+Runs completed successfully: 5/5
+
+Aggregated Metrics (Mean ± Std):
+           auc: 0.7113 ± 0.0115
+         auprc: 0.6515 ± 0.0120
+            f1: 0.5948 ± 0.0108
+     precision: 0.6160 ± 0.0153
+        recall: 0.5754 ± 0.0157
+          loss: 0.7895 ± 0.0453

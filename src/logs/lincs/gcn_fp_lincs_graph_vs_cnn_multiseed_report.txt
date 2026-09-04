@@ -1,0 +1,11 @@
+Model: gcn_fp_lincs_graph_vs_cnn.yaml
+Seeds: [42, 123, 999, 1024, 2026]
+Runs completed successfully: 5/5
+
+Aggregated Metrics (Mean ± Std):
+           auc: 0.7474 ± 0.0124
+         auprc: 0.6979 ± 0.0085
+            f1: 0.6652 ± 0.0203
+     precision: 0.6413 ± 0.0182
+        recall: 0.6918 ± 0.0344
+          loss: 0.7009 ± 0.0276

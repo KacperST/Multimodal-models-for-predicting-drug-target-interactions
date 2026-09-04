@@ -1,0 +1,11 @@
+Model: gcn_fp_chembert_vs_cnn.yaml
+Seeds: [42, 123, 999, 1024, 2026]
+Runs completed successfully: 5/5
+
+Aggregated Metrics (Mean ± Std):
+           auc: 0.7363 ± 0.0121
+         auprc: 0.6730 ± 0.0222
+            f1: 0.6546 ± 0.0202
+     precision: 0.6438 ± 0.0220
+        recall: 0.6659 ± 0.0210
+          loss: 0.7291 ± 0.0507

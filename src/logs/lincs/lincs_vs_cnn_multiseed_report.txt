@@ -1,0 +1,11 @@
+Model: lincs_vs_cnn.yaml
+Seeds: [42, 123, 999, 1024, 2026]
+Runs completed successfully: 5/5
+
+Aggregated Metrics (Mean ± Std):
+           auc: 0.7097 ± 0.0141
+         auprc: 0.6383 ± 0.0201
+            f1: 0.6006 ± 0.0282
+     precision: 0.6120 ± 0.0125
+        recall: 0.5906 ± 0.0447
+          loss: 0.7014 ± 0.0193

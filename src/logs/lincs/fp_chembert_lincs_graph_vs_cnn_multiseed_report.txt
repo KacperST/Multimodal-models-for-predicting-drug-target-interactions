@@ -1,0 +1,11 @@
+Model: fp_chembert_lincs_graph_vs_cnn.yaml
+Seeds: [42, 123, 999, 1024, 2026]
+Runs completed successfully: 5/5
+
+Aggregated Metrics (Mean ± Std):
+           auc: 0.7362 ± 0.0109
+         auprc: 0.6613 ± 0.0153
+            f1: 0.6555 ± 0.0089
+     precision: 0.6386 ± 0.0155
+        recall: 0.6737 ± 0.0103
+          loss: 0.7279 ± 0.0360
