@@ -65,6 +65,7 @@ from encoders.smiles.fingerprint_mlp_encoder import FingerprintMLPEncoder
 from encoders.smiles.gcn_encoder import GCNEncoder
 from encoders.smiles.lincs_encoder import LincsEncoder
 from encoders.smiles.lincs_graph_encoder import LincsGraphEncoder
+from encoders.smiles.rdkit_descriptor_encoder import RDKitDescriptorEncoder
 from fusion.cross_attention_fusion import CrossAttentionFusion
 from fusion.mlp_fusion import MLPFusion
 from models.multimodal import MultimodalDTI
@@ -75,6 +76,7 @@ from processing.smiles.chembert_processor import ChemBERTProcessor
 from processing.smiles.fingerprint_processor import FingerprintProcessor
 from processing.smiles.graph_processor import GraphProcessor
 from processing.smiles.lincs_processor import LincsProcessor
+from processing.smiles.rdkit_descriptor_processor import RDKitDescriptorProcessor
 from training.metrics import compute_confusion_matrix
 from training.trainer import Trainer
 
@@ -145,11 +147,23 @@ def _build_one_smiles(enc_cfg: dict) -> tuple[InputProcessor, nn.Module]:
             smiles_pert_map_path=smiles_pert_map_path,
         )
         encoder = LincsGraphEncoder(
-            in_dim=processor.profile_dim,
+            input_dim=978,  # L1000 landmark genes
             hidden_dim=params.get("hidden_dim", 128),
             out_dim=params.get("out_dim", 128),
             num_layers=params.get("num_layers", 2),
             theta=params.get("theta", 1.0),
+            dropout=params.get("dropout", 0.5),
+        )
+    elif enc_type == "rdkit_descriptors":
+        cache_path = params.get("cache_path")
+        if cache_path and not Path(cache_path).is_absolute():
+            cache_path = str(ROOT_DIR / cache_path)
+        scale = params.get("scale", True)
+        processor = RDKitDescriptorProcessor(cache_path=cache_path, scale=scale)
+        encoder = RDKitDescriptorEncoder(
+            input_dim=processor.descriptor_dim,
+            hidden_dim=params.get("hidden_dim", 256),
+            out_dim=params.get("out_dim", 128),
             dropout=params.get("dropout", 0.5),
         )
     else:
