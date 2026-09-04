@@ -154,7 +154,8 @@ def _build_one_smiles(enc_cfg: dict) -> tuple[InputProcessor, nn.Module]:
         cache_path = params.get("cache_path")
         if cache_path and not Path(cache_path).is_absolute():
             cache_path = str(ROOT_DIR / cache_path)
-        processor = RDKitDescriptorProcessor(cache_path=cache_path)
+        scale = params.get("scale", True)
+        processor = RDKitDescriptorProcessor(cache_path=cache_path, scale=scale)
         encoder = RDKitDescriptorEncoder(
             input_dim=processor.descriptor_dim,
             hidden_dim=params.get("hidden_dim", 256),
@@ -276,10 +277,33 @@ def main() -> None:
         default=None,
         help="Filename for the saved checkpoint (e.g. gcn_cnn.pt). Defaults to config name.",
     )
+    parser.add_argument(
+        "--seed",
+        type=int,
+        default=None,
+        help="Global random seed for PyTorch, NumPy, and random. Optional.",
+    )
     args = parser.parse_args()
 
+    if args.seed is not None:
+        import random
+        import numpy as np
+        import torch
+        print(f"Setting global random seed to {args.seed}")
+        random.seed(args.seed)
+        np.random.seed(args.seed)
+        torch.manual_seed(args.seed)
+        if torch.cuda.is_available():
+            torch.cuda.manual_seed_all(args.seed)
+
     if args.model_name is None:
-        args.model_name = Path(args.config).stem + ".pt"
+        if args.seed is not None:
+            args.model_name = Path(args.config).stem + f"_seed{args.seed}.pt"
+        else:
+            args.model_name = Path(args.config).stem + ".pt"
+    else:
+        if args.seed is not None:
+            args.model_name = args.model_name.replace(".pt", "") + f"_seed{args.seed}.pt"
 
     # ── Load config ──────────────────────────────────────────────
     with open(args.config) as f:
