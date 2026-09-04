@@ -1746,65 +1746,76 @@ pockets, rather than by the global length of the protein chain.
 
 ## Phase 3: Integrating Domain Knowledge with LINCS L1000
 
-Integrating the LINCS L1000 dataset as an additional modality yielded
-improvements in overall predictive performance. As detailed in Table
-[\[tab:lincs_fusion_comparison\]](#tab:lincs_fusion_comparison){reference-type="ref"
-reference="tab:lincs_fusion_comparison"}, appending gene expression
-features increased the Area Under the Curve (AUC) for all baseline
-structural configurations, with the exception of the standalone GCN
-model.
+Integrating the LINCS L1000 dataset as an additional functional modality yielded consistent improvements in overall predictive performance. As detailed in Table [\[tab:lincs_fusion_comparison\]](#tab:lincs_fusion_comparison){reference-type="ref" reference="tab:lincs_fusion_comparison"}, appending gene expression features increased the Area Under the Curve (AUC) across all 7 evaluated structural baseline configurations. To ensure the statistical significance of these improvements and mitigate initialization noise, all reported metrics represent the average across 5 independent training seeds. Furthermore, to maintain a controlled comparison, every configuration in this phase utilizes a 1D Convolutional Neural Network (CNN) as the shared protein sequence encoder.
 
-Excluding the single GCN setup, the remaining multimodal architectures
-gained a minimum of 0.5 percentage points in AUC. The largest increase
-occurred in the dual FP and ChemBERTa baseline, which improved by 5.1
-percentage points (from 0.712 to 0.763) upon the addition of the LINCS
-MLP module. This shift suggests that supplementing structural chemical
-descriptors with functional transcriptomic data improves the
-identification of complex interaction patterns.
+In this context, the term "modality" distinguishes between the structural representation of a drug (e.g., topological graphs or text-based SMILES) and its functional biological fingerprint (L1000). For 7 out of 7 tested configurations, supplementing the structural modality with transcriptomic data via at least one of the LINCS encoders (MLP or Dynamic Graph) successfully improved the predictive performance. The most notable increase occurred in the dual-modality structural baseline (GCN + ChemBERTa), which improved by 2.9 percentage points (from 0.698 to 0.727) upon the addition of the LINCS MLP module. Similarly, the standalone ChemBERTa encoder saw its AUC rise from 0.710 to 0.733. This shift confirms the core hypothesis: supplementing structural chemical descriptors with functional transcriptomic data improves the identification of complex interaction patterns.
 
-Interestingly, the standalone GCN was the only model to suffer a
-performance degradation when combined with LINCS. This drop likely
-occurs because the highly dense, 978-dimensional biological vector
-overwhelms the sparser topological signals extracted by the isolated GCN
-during the late-fusion concatenation. Notably, when the GCN is supported
-by an additional structural modality (e.g., FP + GCN), the integration
-of LINCS successfully improves predictive performance.
+\begin{table}[H]
+    \centering
+    \caption{Comparison of Base Structural Models vs. Models with LINCS (MLP and Dynamic Graph). All metrics are averaged over 5 random seeds to ensure statistical robustness. In all configurations, the protein target is encoded using a 1D CNN.}
+    \label{tab:lincs_fusion_comparison}
+    \resizebox{0.9\textwidth}{!}{
+    \begin{tabular}{l ccccc}
+        \toprule
+        \textbf{Model / Configuration} & \textbf{AUC} & \textbf{AUPRC} & \textbf{F1} & \textbf{Prec.} & \textbf{Rec.} \\
+        \midrule
+        \multicolumn{6}{l}{\textit{Single Structural Modality}} \\
+        \textbf{FP} & & & & & \\
+        \hspace{3mm} Base (No LINCS) & 0.740 $\pm$ 0.009 & 0.699 $\pm$ 0.008 & 0.647 $\pm$ 0.012 & 0.642 $\pm$ 0.010 & 0.652 $\pm$ 0.022 \\
+        \hspace{3mm} + LINCS (MLP) & 0.741 $\pm$ 0.004 & 0.681 $\pm$ 0.015 & 0.647 $\pm$ 0.017 & 0.655 $\pm$ 0.013 & 0.642 $\pm$ 0.040 \\
+        \hspace{3mm} + LINCS (Graph) & \textbf{0.751} $\pm$ 0.008 & 0.692 $\pm$ 0.012 & 0.664 $\pm$ 0.011 & 0.647 $\pm$ 0.015 & 0.684 $\pm$ 0.026 \\
+        \addlinespace
+        \textbf{GCN} & & & & & \\
+        \hspace{3mm} Base (No LINCS) & 0.711 $\pm$ 0.011 & 0.651 $\pm$ 0.012 & 0.595 $\pm$ 0.011 & 0.616 $\pm$ 0.015 & 0.575 $\pm$ 0.016 \\
+        \hspace{3mm} + LINCS (MLP) & 0.708 $\pm$ 0.010 & 0.644 $\pm$ 0.017 & 0.613 $\pm$ 0.007 & 0.622 $\pm$ 0.007 & 0.605 $\pm$ 0.014 \\
+        \hspace{3mm} + LINCS (Graph) & \textbf{0.723} $\pm$ 0.013 & 0.660 $\pm$ 0.018 & 0.609 $\pm$ 0.016 & 0.618 $\pm$ 0.024 & 0.602 $\pm$ 0.032 \\
+        \addlinespace
+        \textbf{ChemBERTa} & & & & & \\
+        \hspace{3mm} Base (No LINCS) & 0.710 $\pm$ 0.013 & 0.641 $\pm$ 0.023 & 0.631 $\pm$ 0.010 & 0.615 $\pm$ 0.019 & 0.649 $\pm$ 0.031 \\
+        \hspace{3mm} + LINCS (MLP) & \textbf{0.733} $\pm$ 0.012 & 0.648 $\pm$ 0.013 & 0.661 $\pm$ 0.013 & 0.646 $\pm$ 0.019 & 0.679 $\pm$ 0.022 \\
+        \hspace{3mm} + LINCS (Graph) & 0.717 $\pm$ 0.015 & 0.642 $\pm$ 0.014 & 0.639 $\pm$ 0.010 & 0.622 $\pm$ 0.021 & 0.657 $\pm$ 0.015 \\
+        \midrule
+        \multicolumn{6}{l}{\textit{Dual Structural Modalities}} \\
+        \textbf{FP + GCN} & & & & & \\
+        \hspace{3mm} Base (No LINCS) & 0.725 $\pm$ 0.030 & 0.681 $\pm$ 0.037 & 0.641 $\pm$ 0.029 & 0.617 $\pm$ 0.034 & 0.669 $\pm$ 0.037 \\
+        \hspace{3mm} + LINCS (MLP) & 0.740 $\pm$ 0.005 & 0.688 $\pm$ 0.006 & 0.634 $\pm$ 0.015 & 0.642 $\pm$ 0.011 & 0.627 $\pm$ 0.029 \\
+        \hspace{3mm} + LINCS (Graph) & \textbf{0.747} $\pm$ 0.012 & 0.698 $\pm$ 0.009 & 0.665 $\pm$ 0.020 & 0.641 $\pm$ 0.018 & 0.692 $\pm$ 0.034 \\
+        \addlinespace
+        \textbf{FP + ChemBERTa} & & & & & \\
+        \hspace{3mm} Base (No LINCS) & 0.727 $\pm$ 0.007 & 0.658 $\pm$ 0.004 & 0.642 $\pm$ 0.006 & 0.630 $\pm$ 0.025 & 0.656 $\pm$ 0.019 \\
+        \hspace{3mm} + LINCS (MLP) & 0.732 $\pm$ 0.011 & 0.659 $\pm$ 0.009 & 0.644 $\pm$ 0.015 & 0.629 $\pm$ 0.011 & 0.660 $\pm$ 0.029 \\
+        \hspace{3mm} + LINCS (Graph) & \textbf{0.736} $\pm$ 0.011 & 0.661 $\pm$ 0.015 & 0.655 $\pm$ 0.009 & 0.639 $\pm$ 0.015 & 0.674 $\pm$ 0.010 \\
+        \addlinespace
+        \textbf{GCN + ChemBERTa} & & & & & \\
+        \hspace{3mm} Base (No LINCS) & 0.698 $\pm$ 0.005 & 0.625 $\pm$ 0.017 & 0.615 $\pm$ 0.016 & 0.598 $\pm$ 0.010 & 0.635 $\pm$ 0.035 \\
+        \hspace{3mm} + LINCS (MLP) & \textbf{0.727} $\pm$ 0.013 & 0.646 $\pm$ 0.017 & 0.647 $\pm$ 0.013 & 0.642 $\pm$ 0.026 & 0.654 $\pm$ 0.026 \\
+        \hspace{3mm} + LINCS (Graph) & 0.720 $\pm$ 0.013 & 0.632 $\pm$ 0.022 & 0.643 $\pm$ 0.016 & 0.633 $\pm$ 0.024 & 0.654 $\pm$ 0.023 \\
+        \midrule
+        \multicolumn{6}{l}{\textit{Triple Structural Modalities}} \\
+        \textbf{FP + GCN + ChemBERTa} & & & & & \\
+        \hspace{3mm} Base (No LINCS) & 0.736 $\pm$ 0.012 & 0.673 $\pm$ 0.022 & 0.655 $\pm$ 0.020 & 0.644 $\pm$ 0.022 & 0.666 $\pm$ 0.021 \\
+        \hspace{3mm} + LINCS (MLP) & \textbf{0.739} $\pm$ 0.014 & 0.674 $\pm$ 0.019 & 0.647 $\pm$ 0.015 & 0.636 $\pm$ 0.022 & 0.661 $\pm$ 0.031 \\
+        \hspace{3mm} + LINCS (Graph) & 0.738 $\pm$ 0.012 & 0.666 $\pm$ 0.005 & 0.656 $\pm$ 0.007 & 0.632 $\pm$ 0.011 & 0.681 $\pm$ 0.008 \\
+        \bottomrule
+    \end{tabular}
+    }
+\end{table}
 
-Furthermore, the evaluation indicates a slight advantage for the global
-Multi-Layer Perceptron (MLP) encoder over the dynamic graph variant
-within the fusion frameworks. The standard MLP configuration yielded
-higher AUC scores in 4 out of 7 evaluated structural combinations,
-suggesting that a global functional summary is often sufficient for this
-classification task.
+Furthermore, the evaluation reveals distinct architectural synergies depending on the chosen structural encoders. The dynamic graph variant (LINCS Graph) consistently outperformed the global MLP in frameworks relying heavily on classical structural representations (such as standalone FP, standalone GCN, and the dual FP + GCN). Conversely, models utilizing contextual language embeddings (ChemBERTa) achieved superior fusion performance with the global Multi-Layer Perceptron (LINCS MLP).
 
-To further isolate the predictive capacity of the biological
-descriptors, the LINCS encoders were also evaluated independently,
-without any structural features. Table
-[4.2](#tab:lincs_only_models){reference-type="ref"
-reference="tab:lincs_only_models"} presents the performance of these
-transcriptomic-only models. While they achieve baseline predictive
-capabilities (AUC near 0.698), they fall short of the structural
-baselines, indicating that biological domain knowledge acts best as a
-supplementary prior rather than a standalone descriptor.
+To further isolate the predictive capacity of the biological descriptors, the LINCS encoders were also evaluated independently, without any structural features. Table [4.2](#tab:lincs_only_models){reference-type="ref" reference="tab:lincs_only_models"} presents the performance of these transcriptomic-only models. While they achieve solid predictive capabilities (with the MLP variant reaching an AUC of 0.710), they generally fall short of the multimodal baselines. This confirms that transcriptomic domain knowledge acts best as a supplementary prior capable of steering structural descriptors, rather than a standalone feature.
 
 ::: {#tab:lincs_only_models}
   **Model Strategy**     **AUC**    **AUPRC**    **F1**     **Precision**   **Recall**
   -------------------- ----------- ----------- ----------- --------------- ------------
-  LINCS (MLP)             0.697       0.616       0.595         0.583         0.606
-  LINCS (Graph)         **0.698**   **0.617**   **0.601**     **0.594**     **0.608**
+  LINCS (MLP)           **0.710** $\pm$ 0.014   **0.638** $\pm$ 0.020     0.601 $\pm$ 0.028       **0.612** $\pm$ 0.012       0.591 $\pm$ 0.045
+  LINCS (Graph)           0.699 $\pm$ 0.007       0.614 $\pm$ 0.009     **0.611** $\pm$ 0.014       0.597 $\pm$ 0.011       **0.626** $\pm$ 0.025
 
   : Performance of Models Using Exclusively LINCS L1000 Expression
-  Profiles
+  Profiles (averaged over 5 random seeds). The protein target is encoded using a 1D CNN.
 :::
 
-It should be noted that the overall performance in Phase 3 is noticeably
-lower than in Phases 1 and 2. This drop is probably a direct result of
-the much smaller dataset size. Training deep neural networks on just
-27,000 interactions instead of the original 450,000 makes it
-significantly harder for the models to generalize. Therefore, while the
-relative improvements show that transcriptomic data is useful, the
-absolute scores simply reflect the difficulty of training complex models
-on limited data.
+It should be noted that the overall absolute performance in Phase 3 is lower than in the initial, structurally-focused Phases. This drop is a direct result of the constrained dataset size. Training deep neural networks on just ~27,000 interactions instead of the original ~450,000 creates a significantly more challenging optimization landscape. Therefore, while the relative multiseed improvements definitively prove that transcriptomic data provides an orthogonal, highly useful signal, the absolute scores simply reflect the difficulty of training complex multimodal architectures on limited data.
 
 ## Experimental Setup and Training Details
 

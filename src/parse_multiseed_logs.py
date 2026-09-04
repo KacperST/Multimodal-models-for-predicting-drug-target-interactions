@@ -14,9 +14,8 @@ def parse_report(filepath):
         match = re.search(fr'{metric}:\s+([0-9.]+)\s+±\s+([0-9.]+)', content)
         if match:
             mean = float(match.group(1))
-            # std = float(match.group(2))
-            # Just print the mean for the LaTeX table to fit the user's example style
-            metrics[metric] = f'{mean:.3f}'
+            std = float(match.group(2))
+            metrics[metric] = f'{mean:.3f} $\\pm$ {std:.3f}'
         else:
             metrics[metric] = '-'
     return metrics
@@ -33,58 +32,60 @@ models = [
 
 print(r'''\begin{table}[H]
     \centering
-    \caption{Comparison of Base Structural Models vs. Models with LINCS (MLP and Dynamic Graph) averaged over 5 random seeds.}
-    \label{tab:lincs_fusion_comparison_multiseed}
-    \resizebox{\textwidth}{!}{
-    \begin{tabular}{l ccccc ccccc ccccc}
+    \caption{Comparison of Base Structural Models vs. Models with LINCS (MLP and Dynamic Graph). All metrics are averaged over 5 random seeds to ensure statistical robustness. In all configurations, the protein target is encoded using a 1D CNN.}
+    \label{tab:lincs_fusion_comparison}
+    \resizebox{0.9\textwidth}{!}{
+    \begin{tabular}{l ccccc}
         \toprule
-        \multirow{2}{*}{\textbf{Structural Encoders}} & \multicolumn{5}{c}{\textbf{Base Model (No LINCS)}} & \multicolumn{5}{c}{\textbf{+ LINCS (MLP)}} & \multicolumn{5}{c}{\textbf{+ LINCS (Graph)}} \\
-        \cmidrule(lr){2-6} \cmidrule(lr){7-11} \cmidrule(lr){12-16}
-        & \textbf{AUC} & \textbf{AUPRC} & \textbf{F1} & \textbf{Prec.} & \textbf{Rec.} & \textbf{AUC} & \textbf{AUPRC} & \textbf{F1} & \textbf{Prec.} & \textbf{Rec.} & \textbf{AUC} & \textbf{AUPRC} & \textbf{F1} & \textbf{Prec.} & \textbf{Rec.} \\
+        \textbf{Model / Configuration} & \textbf{AUC} & \textbf{AUPRC} & \textbf{F1} & \textbf{Prec.} & \textbf{Rec.} \\
         \midrule''')
 
 for i, (name, base, mlp, graph) in enumerate(models):
     if i == 0:
-        print(r'        \multicolumn{16}{l}{\textit{Single Structural Modality}} \\')
+        print(r'        \multicolumn{6}{l}{\textit{Single Structural Modality}} \\')
     elif i == 3:
         print(r'        \midrule')
-        print(r'        \multicolumn{16}{l}{\textit{Dual Structural Modalities}} \\')
+        print(r'        \multicolumn{6}{l}{\textit{Dual Structural Modalities}} \\')
     elif i == 6:
         print(r'        \midrule')
-        print(r'        \multicolumn{16}{l}{\textit{Triple Structural Modalities}} \\')
+        print(r'        \multicolumn{6}{l}{\textit{Triple Structural Modalities}} \\')
         
-    m_base = parse_report(f'logs/lincs/{base}_vs_cnn_multiseed_report.txt')
-    m_mlp = parse_report(f'logs/lincs/{mlp}_vs_cnn_multiseed_report.txt')
-    m_graph = parse_report(f'logs/lincs/{graph}_vs_cnn_multiseed_report.txt')
+    root_dir = Path(__file__).resolve().parent
+    m_base = parse_report(str(root_dir / f'logs/lincs/{base}_vs_cnn_multiseed_report.txt'))
+    m_mlp = parse_report(str(root_dir / f'logs/lincs/{mlp}_vs_cnn_multiseed_report.txt'))
+    m_graph = parse_report(str(root_dir / f'logs/lincs/{graph}_vs_cnn_multiseed_report.txt'))
     
     def highlight_best(metric_key):
         vals = []
         for m in [m_base, m_mlp, m_graph]:
             if m[metric_key] != '-':
-                vals.append(float(m[metric_key]))
+                mean_val = float(m[metric_key].split(' $\\pm$ ')[0])
+                vals.append(mean_val)
         if not vals:
             return m_base[metric_key], m_mlp[metric_key], m_graph[metric_key]
         
         best = max(vals)
         out = []
         for m in [m_base, m_mlp, m_graph]:
-            if m[metric_key] != '-' and float(m[metric_key]) == best:
-                out.append(r'\textbf{' + m[metric_key] + '}')
+            if m[metric_key] != '-':
+                mean_val = float(m[metric_key].split(' $\\pm$ ')[0])
+                if mean_val == best:
+                    parts = m[metric_key].split(' $\\pm$ ')
+                    out.append(r'\textbf{' + parts[0] + r'} $\pm$ ' + parts[1])
+                else:
+                    out.append(m[metric_key])
             else:
                 out.append(m[metric_key])
         return out[0], out[1], out[2]
         
     auc_b, auc_m, auc_g = highlight_best('auc')
     
-    line = f'        {name}'
-    for idx, m in enumerate([m_base, m_mlp, m_graph]):
-        if idx == 0: auc = auc_b
-        elif idx == 1: auc = auc_m
-        else: auc = auc_g
-        
-        line += f" & {auc} & {m['auprc']} & {m['f1']} & {m['precision']} & {m['recall']}"
-    line += ' \\\\'
-    print(line)
+    print(r'        \textbf{' + name + r'} & & & & & \\')
+    print(f"        \\hspace{{3mm}} Base (No LINCS) & {auc_b} & {m_base['auprc']} & {m_base['f1']} & {m_base['precision']} & {m_base['recall']} \\\\")
+    print(f"        \\hspace{{3mm}} + LINCS (MLP) & {auc_m} & {m_mlp['auprc']} & {m_mlp['f1']} & {m_mlp['precision']} & {m_mlp['recall']} \\\\")
+    print(f"        \\hspace{{3mm}} + LINCS (Graph) & {auc_g} & {m_graph['auprc']} & {m_graph['f1']} & {m_graph['precision']} & {m_graph['recall']} \\\\")
+    if i < len(models) - 1 and i not in [2, 5]:
+        print(r'        \addlinespace')
 
 print(r'''        \bottomrule
     \end{tabular}
