@@ -1746,9 +1746,9 @@ pockets, rather than by the global length of the protein chain.
 
 ## Phase 3: Integrating Domain Knowledge with LINCS L1000
 
-Integrating the LINCS L1000 dataset as an additional functional modality yielded consistent improvements in overall predictive performance. As detailed in Table [\[tab:lincs_fusion_comparison\]](#tab:lincs_fusion_comparison){reference-type="ref" reference="tab:lincs_fusion_comparison"}, appending gene expression features increased the Area Under the Curve (AUC) across all 7 evaluated structural baseline configurations. To ensure the statistical significance of these improvements and mitigate initialization noise, all reported metrics represent the average across 5 independent training seeds. Furthermore, to maintain a controlled comparison, every configuration in this phase utilizes a 1D Convolutional Neural Network (CNN) as the shared protein sequence encoder.
+When evaluating the results of Phase 3, the size of the datasets must be taken into account. While the dataset for Phases 1 and 2 contained approximately 450,000 records, the Phase 3 dataset is limited to only 27,000 interactions. Simultaneously, the larger dataset featured around 87,000 unique molecular scaffolds, whereas the inner join of both datasets resulted in just over 1,200 scaffolds. However, this more than 15-fold reduction in dataset size permitted the experiments to be repeated five times using different random initialization seeds (42, 123, 999, 1024, and 2026). This multiseed approach ensures statistical robustness, allowing us to clearly determine whether performance differences come from random weight initializations or the actual training of the models. Additionally, based on the findings from Phases 1 and 2, it was decided to exclusively use the 1D CNN as the protein target encoder. The CNN yielded comparable or superior results to ESM2 (or their combination) while requiring significantly less computational power.
 
-In this context, the term "modality" distinguishes between the structural representation of a drug (e.g., topological graphs or text-based SMILES) and its functional biological fingerprint (L1000). For 7 out of 7 tested configurations, supplementing the structural modality with transcriptomic data via at least one of the LINCS encoders (MLP or Dynamic Graph) successfully improved the predictive performance. The most notable increase occurred in the dual-modality structural baseline (GCN + ChemBERTa), which improved by 2.9 percentage points (from 0.698 to 0.727) upon the addition of the LINCS MLP module. Similarly, the standalone ChemBERTa encoder saw its AUC rise from 0.710 to 0.733. This shift confirms the core hypothesis: supplementing structural chemical descriptors with functional transcriptomic data improves the identification of complex interaction patterns.
+The integration of the LINCS L1000 dataset as an additional modality improved overall predictive performance. As presented in Table \ref{tab:lincs_fusion_comparison}, appending domain knowledge in the form of gene expression profiles from LINCS L1000 increased key metrics, including AUC, across all seven baseline structural configurations. Gains reaching over 2 percentage points were observed in combinations such as ChemBERTa (increasing from 0.710 to 0.733), FP + GCN (from 0.725 to 0.747), and GCN + ChemBERTa (from 0.698 to 0.727). In the remaining configurations featuring one or two SMILES-processing encoders, performance improvements are also present, generally falling within the range of 0.009 to 0.012. Only for the most complex combination (FP + GCN + ChemBERTa) was the increase marginal at 0.003, which is four times smaller than the standard deviation of the base model relying on these three encoders.
 
 \begin{table}[H]
     \centering
@@ -1801,21 +1801,27 @@ In this context, the term "modality" distinguishes between the structural repres
     }
 \end{table}
 
-Furthermore, the evaluation reveals distinct architectural synergies depending on the chosen structural encoders. The dynamic graph variant (LINCS Graph) consistently outperformed the global MLP in frameworks relying heavily on classical structural representations (such as standalone FP, standalone GCN, and the dual FP + GCN). Conversely, models utilizing contextual language embeddings (ChemBERTa) achieved superior fusion performance with the global Multi-Layer Perceptron (LINCS MLP).
+Comparing the two LINCS-based gene expression encoders, neither architecture demonstrates a definitive upper hand. The dynamic LINCS Graph encoder outperformed the MLP-based encoder in four out of the seven model configurations, whereas the MLP proved superior in the remaining three. In five of the seven models, the performance difference between the two variants is less than 0.01. For the other two configurations, the MLP provides a 0.016 advantage over the graph model (in the standalone ChemBERTa architecture), while conversely, the LINCS Graph model yields a 0.015 advantage for the standalone GCN encoder.
 
-To further isolate the predictive capacity of the biological descriptors, the LINCS encoders were also evaluated independently, without any structural features. Table [4.2](#tab:lincs_only_models){reference-type="ref" reference="tab:lincs_only_models"} presents the performance of these transcriptomic-only models. While they achieve solid predictive capabilities (with the MLP variant reaching an AUC of 0.710), they generally fall short of the multimodal baselines. This confirms that transcriptomic domain knowledge acts best as a supplementary prior capable of steering structural descriptors, rather than a standalone feature.
+In addition to the multimodal architectures, two models relying exclusively on domain knowledge (without structural drug data) were trained. These results are presented in Table \ref{tab:lincs_only_models}. As observed, the MLP acting as a standalone encoder performed marginally better than the dynamic graph variant, achieving a 0.011 advantage in AUC and a 0.024 advantage in AUPRC. Nevertheless, both models perform significantly worse as standalone transcriptomic encoders compared to their integration with structural molecular features.
 
-::: {#tab:lincs_only_models}
-  **Model Strategy**     **AUC**    **AUPRC**    **F1**     **Precision**   **Recall**
-  -------------------- ----------- ----------- ----------- --------------- ------------
-  LINCS (MLP)           **0.710** $\pm$ 0.014   **0.638** $\pm$ 0.020     0.601 $\pm$ 0.028       **0.612** $\pm$ 0.012       0.591 $\pm$ 0.045
-  LINCS (Graph)           0.699 $\pm$ 0.007       0.614 $\pm$ 0.009     **0.611** $\pm$ 0.014       0.597 $\pm$ 0.011       **0.626** $\pm$ 0.025
+\begin{table}[H]
+    \centering
+    \caption{Performance of Models Using Exclusively LINCS L1000 Expression Profiles (averaged over 5 random seeds). The protein target is encoded using a 1D CNN.}
+    \label{tab:lincs_only_models}
+    \resizebox{0.9\textwidth}{!}{
+    \begin{tabular}{l ccccc}
+        \toprule
+        \textbf{Model Strategy} & \textbf{AUC} & \textbf{AUPRC} & \textbf{F1} & \textbf{Precision} & \textbf{Recall} \\
+        \midrule
+        LINCS (MLP) & \textbf{0.710} $\pm$ 0.014 & \textbf{0.638} $\pm$ 0.020 & 0.601 $\pm$ 0.028 & \textbf{0.612} $\pm$ 0.012 & 0.591 $\pm$ 0.045 \\
+        LINCS (Graph) & 0.699 $\pm$ 0.007 & 0.614 $\pm$ 0.009 & \textbf{0.611} $\pm$ 0.014 & 0.597 $\pm$ 0.011 & \textbf{0.626} $\pm$ 0.025 \\
+        \bottomrule
+    \end{tabular}
+    }
+\end{table}
 
-  : Performance of Models Using Exclusively LINCS L1000 Expression
-  Profiles (averaged over 5 random seeds). The protein target is encoded using a 1D CNN.
-:::
-
-It should be noted that the overall absolute performance in Phase 3 is lower than in the initial, structurally-focused Phases. This drop is a direct result of the constrained dataset size. Training deep neural networks on just ~27,000 interactions instead of the original ~450,000 creates a significantly more challenging optimization landscape. Therefore, while the relative multiseed improvements definitively prove that transcriptomic data provides an orthogonal, highly useful signal, the absolute scores simply reflect the difficulty of training complex multimodal architectures on limited data.
+As mentioned in the introduction to this phase, the integration of LINCS caused a significant reduction in the dataset. The limited number of unique drugs made it difficult for the models to learn complex molecular structures, resulting in a noticeable decline in absolute performance metrics compared to Phases 1 and 2.
 
 ## Experimental Setup and Training Details
 
