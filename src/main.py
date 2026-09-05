@@ -147,7 +147,7 @@ def _build_one_smiles(enc_cfg: dict) -> tuple[InputProcessor, nn.Module]:
             smiles_pert_map_path=smiles_pert_map_path,
         )
         encoder = LincsGraphEncoder(
-            input_dim=978,  # L1000 landmark genes
+            in_dim=978,  # L1000 landmark genes
             hidden_dim=params.get("hidden_dim", 128),
             out_dim=params.get("out_dim", 128),
             num_layers=params.get("num_layers", 2),
