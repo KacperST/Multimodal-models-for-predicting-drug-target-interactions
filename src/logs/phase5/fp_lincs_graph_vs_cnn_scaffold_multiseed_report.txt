@@ -1,0 +1,12 @@
+Model: fp_lincs_graph_vs_cnn.yaml
+Split strategy: scaffold
+Seeds: [42, 123, 999, 1024, 2026]
+Runs completed successfully: 5/5
+
+Aggregated Metrics (Mean ± Std):
+           auc: 0.7468 ± 0.0101
+         auprc: 0.6824 ± 0.0139
+            f1: 0.6610 ± 0.0067
+     precision: 0.6382 ± 0.0158
+        recall: 0.6864 ± 0.0192
+          loss: 0.6891 ± 0.0483

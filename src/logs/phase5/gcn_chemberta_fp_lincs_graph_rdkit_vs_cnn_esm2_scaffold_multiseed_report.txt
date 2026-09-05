@@ -1,0 +1,6 @@
+Model: gcn_chemberta_fp_lincs_graph_rdkit_vs_cnn_esm2.yaml
+Split strategy: scaffold
+Seeds: [42, 123, 999, 1024, 2026]
+Runs completed successfully: 0/5
+
+Aggregated Metrics (Mean ± Std):

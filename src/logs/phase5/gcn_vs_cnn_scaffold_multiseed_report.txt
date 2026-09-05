@@ -1,0 +1,12 @@
+Model: gcn_vs_cnn.yaml
+Split strategy: scaffold
+Seeds: [42, 123, 999, 1024, 2026]
+Runs completed successfully: 5/5
+
+Aggregated Metrics (Mean ± Std):
+           auc: 0.7130 ± 0.0110
+         auprc: 0.6586 ± 0.0099
+            f1: 0.5899 ± 0.0065
+     precision: 0.6066 ± 0.0198
+        recall: 0.5753 ± 0.0215
+          loss: 0.7992 ± 0.0563

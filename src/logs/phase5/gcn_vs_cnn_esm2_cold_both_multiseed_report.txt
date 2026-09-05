@@ -1,0 +1,6 @@
+Model: gcn_vs_cnn_esm2.yaml
+Split strategy: cold_both
+Seeds: [42, 123, 999, 1024, 2026]
+Runs completed successfully: 0/5
+
+Aggregated Metrics (Mean ± Std):

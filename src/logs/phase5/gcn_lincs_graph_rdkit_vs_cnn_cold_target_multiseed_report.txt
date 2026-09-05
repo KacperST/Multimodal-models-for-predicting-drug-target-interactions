@@ -1,0 +1,12 @@
+Model: gcn_lincs_graph_rdkit_vs_cnn.yaml
+Split strategy: cold_target
+Seeds: [42, 123, 999, 1024, 2026]
+Runs completed successfully: 5/5
+
+Aggregated Metrics (Mean ± Std):
+           auc: 0.7137 ± 0.0119
+         auprc: 0.6598 ± 0.0125
+            f1: 0.6200 ± 0.0379
+     precision: 0.6569 ± 0.0178
+        recall: 0.5937 ± 0.0839
+          loss: 0.6490 ± 0.0184
