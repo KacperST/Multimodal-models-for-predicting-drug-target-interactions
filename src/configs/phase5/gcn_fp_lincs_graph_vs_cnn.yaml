@@ -10,7 +10,6 @@ smiles_encoders:
 - type: gcn
   params:
     hidden_dim: 128
-    out_dim: 128
     num_layers: 3
     dropout: 0.5
 - type: fingerprint_mlp

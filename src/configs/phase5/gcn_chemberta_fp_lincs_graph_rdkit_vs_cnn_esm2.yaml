@@ -15,10 +15,8 @@ smiles_encoders:
     dropout: 0.5
 - type: chembert
   params:
-    model_name: DeepChem/ChemBERTa-77M-MTR
-    max_length: 256
-    out_dim: 128
-    freeze_base: true
+    cache_path: datasets/ChemBERTa-zinc-base-v1.pt
+    out_dim: 256
 - type: fingerprint_mlp
   params:
     fp_type: ecfp
