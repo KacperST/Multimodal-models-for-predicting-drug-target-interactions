@@ -5,9 +5,9 @@ set -e
 
 # List of the 7 best models selected for Phase 5
 CONFIGS=(
+  "configs/phase5/fp_lincs_graph_vs_cnn.yaml"
   "configs/phase5/gcn_vs_cnn.yaml"
   "configs/phase5/gcn_vs_cnn_esm2.yaml"
-  "configs/phase5/fp_lincs_graph_vs_cnn.yaml"
   "configs/phase5/gcn_fp_lincs_graph_vs_cnn.yaml"
   "configs/phase5/gcn_lincs_graph_rdkit_vs_cnn.yaml"
   "configs/phase5/fp_gcn_lincs_graph_rdkit_vs_cnn.yaml"

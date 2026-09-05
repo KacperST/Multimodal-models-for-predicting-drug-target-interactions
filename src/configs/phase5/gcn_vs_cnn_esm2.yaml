@@ -15,7 +15,7 @@ protein_encoders:
 - type: cnn
   params:
     embed_dim: 128
-    num_filters: 
+    num_filters: 64
     kernel_sizes:
     - 3
     - 7
