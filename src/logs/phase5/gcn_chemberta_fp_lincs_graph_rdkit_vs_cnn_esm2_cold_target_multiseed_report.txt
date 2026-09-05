@@ -1,6 +1,12 @@
 Model: gcn_chemberta_fp_lincs_graph_rdkit_vs_cnn_esm2.yaml
 Split strategy: cold_target
 Seeds: [42, 123, 999, 1024, 2026]
-Runs completed successfully: 0/5
+Runs completed successfully: 5/5
 
 Aggregated Metrics (Mean ± Std):
+           auc: 0.7336 ± 0.0102
+         auprc: 0.6864 ± 0.0234
+            f1: 0.6627 ± 0.0249
+     precision: 0.6803 ± 0.0242
+        recall: 0.6467 ± 0.0316
+          loss: 0.6254 ± 0.0104

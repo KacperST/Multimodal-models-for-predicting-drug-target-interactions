@@ -10,16 +10,202 @@ Split strategy: scaffold
 Train: 19558  Val: 2885  Test: 5055
 ChemBERTProcessor: loaded 236379 embeddings (dim=768) from /net/storage/pr3/plgrid/plggmlcil/plgkstankie/vvv/Multimodal-models-for-predicting-drug-target-interactions/src/datasets/ChemBERTa-zinc-base-v1.pt
 Fitting MinMaxScaler on 1264 cached RDKit descriptors...
-Traceback (most recent call last):
-  File "/net/storage/pr3/plgrid/plggmlcil/plgkstankie/vvv/Multimodal-models-for-predicting-drug-target-interactions/src/main.py", line 459, in <module>
-    main()
-  File "/net/storage/pr3/plgrid/plggmlcil/plgkstankie/vvv/Multimodal-models-for-predicting-drug-target-interactions/src/main.py", line 357, in main
-    protein_processors, protein_encoders = build_protein_components(cfg)
-                                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/net/storage/pr3/plgrid/plggmlcil/plgkstankie/vvv/Multimodal-models-for-predicting-drug-target-interactions/src/main.py", line 237, in build_protein_components
-    proc, enc = _build_one_protein(spec)
-                ^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/net/storage/pr3/plgrid/plggmlcil/plgkstankie/vvv/Multimodal-models-for-predicting-drug-target-interactions/src/main.py", line 190, in _build_one_protein
-    cache_path = params["cache_path"]
-                 ~~~~~~^^^^^^^^^^^^^^
-KeyError: 'cache_path'
+ESM2Processor: loaded 3580 embeddings (dim=1280) from /net/storage/pr3/plgrid/plggmlcil/plgkstankie/vvv/Multimodal-models-for-predicting-drug-target-interactions/src/datasets/esm2_t33_650M_UR50D.pt
+SMILES encoders:  ['GCNEncoder', 'ChemBERTEncoder', 'FingerprintMLPEncoder', 'RDKitDescriptorEncoder', 'LincsGraphEncoder']
+Protein encoders: ['ProteinCNNEncoder', 'ESM2Encoder']
+Building graph cache for 1264 SMILES...
+  0%|          | 0/1264 [00:00<?, ?it/s]  0%|          | 2/1264 [00:00<01:03, 19.90it/s] 18%|█▊        | 232/1264 [00:00<00:00, 1358.18it/s] 36%|███▌      | 453/1264 [00:00<00:00, 1741.58it/s] 53%|█████▎    | 673/1264 [00:00<00:00, 1919.30it/s] 70%|███████   | 891/1264 [00:00<00:00, 2010.18it/s] 89%|████████▉ | 1129/1264 [00:00<00:00, 2134.20it/s]100%|██████████| 1264/1264 [00:00<00:00, 1921.04it/s]
+Valid SMILES graphs: 1264
+MultimodalDTI(
+  (smiles_encoders): ModuleList(
+    (0): GCNEncoder(
+      (atom_encoder): AtomEncoder(
+        (atom_embedding_list): ModuleList(
+          (0): Embedding(119, 128)
+          (1): Embedding(5, 128)
+          (2-3): 2 x Embedding(12, 128)
+          (4): Embedding(10, 128)
+          (5-6): 2 x Embedding(6, 128)
+          (7-8): 2 x Embedding(2, 128)
+        )
+      )
+      (convs): ModuleList(
+        (0-2): 3 x GCNConv(128, 128)
+      )
+      (bns): ModuleList(
+        (0-2): 3 x BatchNorm1d(128, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      )
+    )
+    (1): ChemBERTEncoder(
+      (projection): Sequential(
+        (0): Linear(in_features=768, out_features=256, bias=True)
+        (1): LayerNorm((256,), eps=1e-05, elementwise_affine=True)
+        (2): ReLU()
+      )
+    )
+    (2): FingerprintMLPEncoder(
+      (mlp): Sequential(
+        (0): Linear(in_features=1024, out_features=256, bias=True)
+        (1): BatchNorm1d(256, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (2): ReLU()
+        (3): Dropout(p=0.5, inplace=False)
+        (4): Linear(in_features=256, out_features=128, bias=True)
+        (5): BatchNorm1d(128, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (6): ReLU()
+      )
+    )
+    (3): RDKitDescriptorEncoder(
+      (mlp): Sequential(
+        (0): Linear(in_features=210, out_features=128, bias=True)
+        (1): BatchNorm1d(128, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (2): ReLU()
+        (3): Dropout(p=0.5, inplace=False)
+        (4): Linear(in_features=128, out_features=128, bias=True)
+        (5): BatchNorm1d(128, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (6): ReLU()
+      )
+    )
+    (4): LincsGraphEncoder(
+      (proj): Linear(in_features=1, out_features=128, bias=True)
+      (convs): ModuleList(
+        (0-1): 2 x DenseGCNConv(
+          (linear): Linear(in_features=128, out_features=128, bias=False)
+        )
+      )
+      (bns): ModuleList(
+        (0-1): 2 x BatchNorm1d(128, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      )
+      (pool_proj): Linear(in_features=128, out_features=128, bias=True)
+    )
+  )
+  (protein_encoders): ModuleList(
+    (0): ProteinCNNEncoder(
+      (embedding): Embedding(21, 128, padding_idx=0)
+      (conv_blocks): ModuleList(
+        (0): Sequential(
+          (0): Conv1d(128, 64, kernel_size=(3,), stride=(1,), padding=(1,))
+          (1): BatchNorm1d(64, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+          (2): ReLU()
+          (3): Conv1d(64, 64, kernel_size=(3,), stride=(1,), padding=(1,))
+          (4): BatchNorm1d(64, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+          (5): ReLU()
+        )
+        (1): Sequential(
+          (0): Conv1d(128, 64, kernel_size=(7,), stride=(1,), padding=(3,))
+          (1): BatchNorm1d(64, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+          (2): ReLU()
+          (3): Conv1d(64, 64, kernel_size=(7,), stride=(1,), padding=(3,))
+          (4): BatchNorm1d(64, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+          (5): ReLU()
+        )
+        (2): Sequential(
+          (0): Conv1d(128, 64, kernel_size=(15,), stride=(1,), padding=(7,))
+          (1): BatchNorm1d(64, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+          (2): ReLU()
+          (3): Conv1d(64, 64, kernel_size=(15,), stride=(1,), padding=(7,))
+          (4): BatchNorm1d(64, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+          (5): ReLU()
+        )
+      )
+    )
+    (1): ESM2Encoder(
+      (projection): Sequential(
+        (0): Linear(in_features=1280, out_features=128, bias=True)
+        (1): LayerNorm((128,), eps=1e-05, elementwise_affine=True)
+        (2): ReLU()
+      )
+    )
+  )
+  (fusion): MLPFusion(
+    (classifier): Sequential(
+      (0): Linear(in_features=1088, out_features=128, bias=True)
+      (1): BatchNorm1d(128, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      (2): ReLU()
+      (3): Dropout(p=0.5, inplace=False)
+      (4): Linear(in_features=128, out_features=32, bias=True)
+      (5): BatchNorm1d(32, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      (6): ReLU()
+      (7): Dropout(p=0.5, inplace=False)
+      (8): Linear(in_features=32, out_features=1, bias=True)
+    )
+  )
+)
+Epoch 001 | time=19.4s | train_loss=0.6598 | val_loss=0.6533 | val_auc=0.6889
+  ✓ New best model (epoch 1, val_loss=0.6533, val_auc=0.6889) saved to checkpoints/gcn_chemberta_fp_lincs_graph_rdkit_vs_cnn_esm2_seed42.pt
+Epoch 002 | time=3.9s | train_loss=0.5588 | val_loss=0.6047 | val_auc=0.7495
+  ✓ New best model (epoch 2, val_loss=0.6047, val_auc=0.7495) saved to checkpoints/gcn_chemberta_fp_lincs_graph_rdkit_vs_cnn_esm2_seed42.pt
+Epoch 003 | time=11.6s | train_loss=0.4876 | val_loss=0.5715 | val_auc=0.7770
+  ✓ New best model (epoch 3, val_loss=0.5715, val_auc=0.7770) saved to checkpoints/gcn_chemberta_fp_lincs_graph_rdkit_vs_cnn_esm2_seed42.pt
+Epoch 004 | time=3.9s | train_loss=0.4433 | val_loss=0.5561 | val_auc=0.7908
+  ✓ New best model (epoch 4, val_loss=0.5561, val_auc=0.7908) saved to checkpoints/gcn_chemberta_fp_lincs_graph_rdkit_vs_cnn_esm2_seed42.pt
+Epoch 005 | time=3.8s | train_loss=0.4093 | val_loss=0.5470 | val_auc=0.7937
+  ✓ New best model (epoch 5, val_loss=0.5470, val_auc=0.7937) saved to checkpoints/gcn_chemberta_fp_lincs_graph_rdkit_vs_cnn_esm2_seed42.pt
+Epoch 006 | time=3.9s | train_loss=0.3805 | val_loss=0.5430 | val_auc=0.8002
+  ✓ New best model (epoch 6, val_loss=0.5430, val_auc=0.8002) saved to checkpoints/gcn_chemberta_fp_lincs_graph_rdkit_vs_cnn_esm2_seed42.pt
+Epoch 007 | time=3.8s | train_loss=0.3567 | val_loss=0.5355 | val_auc=0.8079
+  ✓ New best model (epoch 7, val_loss=0.5355, val_auc=0.8079) saved to checkpoints/gcn_chemberta_fp_lincs_graph_rdkit_vs_cnn_esm2_seed42.pt
+Epoch 008 | time=3.8s | train_loss=0.3340 | val_loss=0.5278 | val_auc=0.8139
+  ✓ New best model (epoch 8, val_loss=0.5278, val_auc=0.8139) saved to checkpoints/gcn_chemberta_fp_lincs_graph_rdkit_vs_cnn_esm2_seed42.pt
+Epoch 009 | time=3.9s | train_loss=0.3161 | val_loss=0.5169 | val_auc=0.8241
+  ✓ New best model (epoch 9, val_loss=0.5169, val_auc=0.8241) saved to checkpoints/gcn_chemberta_fp_lincs_graph_rdkit_vs_cnn_esm2_seed42.pt
+Epoch 010 | time=3.8s | train_loss=0.2997 | val_loss=0.5179 | val_auc=0.8246
+  ✓ New best model (epoch 10, val_loss=0.5179, val_auc=0.8246) saved to checkpoints/gcn_chemberta_fp_lincs_graph_rdkit_vs_cnn_esm2_seed42.pt
+Epoch 011 | time=3.8s | train_loss=0.2844 | val_loss=0.5186 | val_auc=0.8237
+Epoch 012 | time=11.6s | train_loss=0.2709 | val_loss=0.5100 | val_auc=0.8255
+  ✓ New best model (epoch 12, val_loss=0.5100, val_auc=0.8255) saved to checkpoints/gcn_chemberta_fp_lincs_graph_rdkit_vs_cnn_esm2_seed42.pt
+Epoch 013 | time=4.0s | train_loss=0.2574 | val_loss=0.5167 | val_auc=0.8244
+Epoch 014 | time=4.1s | train_loss=0.2482 | val_loss=0.5172 | val_auc=0.8263
+  ✓ New best model (epoch 14, val_loss=0.5172, val_auc=0.8263) saved to checkpoints/gcn_chemberta_fp_lincs_graph_rdkit_vs_cnn_esm2_seed42.pt
+Epoch 015 | time=3.9s | train_loss=0.2393 | val_loss=0.5043 | val_auc=0.8348
+  ✓ New best model (epoch 15, val_loss=0.5043, val_auc=0.8348) saved to checkpoints/gcn_chemberta_fp_lincs_graph_rdkit_vs_cnn_esm2_seed42.pt
+Epoch 016 | time=3.9s | train_loss=0.2277 | val_loss=0.5057 | val_auc=0.8350
+  ✓ New best model (epoch 16, val_loss=0.5057, val_auc=0.8350) saved to checkpoints/gcn_chemberta_fp_lincs_graph_rdkit_vs_cnn_esm2_seed42.pt
+Epoch 017 | time=3.9s | train_loss=0.2175 | val_loss=0.5243 | val_auc=0.8282
+Epoch 018 | time=3.9s | train_loss=0.2066 | val_loss=0.5086 | val_auc=0.8384
+  ✓ New best model (epoch 18, val_loss=0.5086, val_auc=0.8384) saved to checkpoints/gcn_chemberta_fp_lincs_graph_rdkit_vs_cnn_esm2_seed42.pt
+Epoch 019 | time=3.8s | train_loss=0.2016 | val_loss=0.5000 | val_auc=0.8445
+  ✓ New best model (epoch 19, val_loss=0.5000, val_auc=0.8445) saved to checkpoints/gcn_chemberta_fp_lincs_graph_rdkit_vs_cnn_esm2_seed42.pt
+Epoch 020 | time=3.8s | train_loss=0.1925 | val_loss=0.5164 | val_auc=0.8385
+Epoch 021 | time=3.8s | train_loss=0.1869 | val_loss=0.5214 | val_auc=0.8381
+Epoch 022 | time=3.8s | train_loss=0.1808 | val_loss=0.5058 | val_auc=0.8470
+  ✓ New best model (epoch 22, val_loss=0.5058, val_auc=0.8470) saved to checkpoints/gcn_chemberta_fp_lincs_graph_rdkit_vs_cnn_esm2_seed42.pt
+Epoch 023 | time=3.8s | train_loss=0.1719 | val_loss=0.5194 | val_auc=0.8446
+Epoch 024 | time=3.8s | train_loss=0.1662 | val_loss=0.5217 | val_auc=0.8445
+Epoch 025 | time=3.8s | train_loss=0.1627 | val_loss=0.5254 | val_auc=0.8451
+Epoch 026 | time=6.5s | train_loss=0.1514 | val_loss=0.5175 | val_auc=0.8486
+  ✓ New best model (epoch 26, val_loss=0.5175, val_auc=0.8486) saved to checkpoints/gcn_chemberta_fp_lincs_graph_rdkit_vs_cnn_esm2_seed42.pt
+Epoch 027 | time=11.3s | train_loss=0.1437 | val_loss=0.5244 | val_auc=0.8453
+Epoch 028 | time=4.0s | train_loss=0.1428 | val_loss=0.5252 | val_auc=0.8470
+Epoch 029 | time=3.8s | train_loss=0.1412 | val_loss=0.5221 | val_auc=0.8493
+  ✓ New best model (epoch 29, val_loss=0.5221, val_auc=0.8493) saved to checkpoints/gcn_chemberta_fp_lincs_graph_rdkit_vs_cnn_esm2_seed42.pt
+Epoch 030 | time=3.8s | train_loss=0.1350 | val_loss=0.5195 | val_auc=0.8526
+  ✓ New best model (epoch 30, val_loss=0.5195, val_auc=0.8526) saved to checkpoints/gcn_chemberta_fp_lincs_graph_rdkit_vs_cnn_esm2_seed42.pt
+Epoch 031 | time=3.8s | train_loss=0.1339 | val_loss=0.5452 | val_auc=0.8464
+Epoch 032 | time=3.8s | train_loss=0.1273 | val_loss=0.5302 | val_auc=0.8528
+  ✓ New best model (epoch 32, val_loss=0.5302, val_auc=0.8528) saved to checkpoints/gcn_chemberta_fp_lincs_graph_rdkit_vs_cnn_esm2_seed42.pt
+Epoch 033 | time=3.8s | train_loss=0.1251 | val_loss=0.5292 | val_auc=0.8507
+Epoch 034 | time=3.9s | train_loss=0.1248 | val_loss=0.5309 | val_auc=0.8513
+Epoch 035 | time=3.8s | train_loss=0.1216 | val_loss=0.5334 | val_auc=0.8494
+Epoch 036 | time=3.9s | train_loss=0.1226 | val_loss=0.5326 | val_auc=0.8531
+  ✓ New best model (epoch 36, val_loss=0.5326, val_auc=0.8531) saved to checkpoints/gcn_chemberta_fp_lincs_graph_rdkit_vs_cnn_esm2_seed42.pt
+Epoch 037 | time=3.8s | train_loss=0.1207 | val_loss=0.5455 | val_auc=0.8470
+Epoch 038 | time=3.8s | train_loss=0.1182 | val_loss=0.5450 | val_auc=0.8486
+Epoch 039 | time=3.8s | train_loss=0.1204 | val_loss=0.5440 | val_auc=0.8500
+Epoch 040 | time=13.0s | train_loss=0.1145 | val_loss=0.5396 | val_auc=0.8506
+Epoch 041 | time=4.1s | train_loss=0.1154 | val_loss=0.5420 | val_auc=0.8500
+Epoch 042 | time=4.0s | train_loss=0.1141 | val_loss=0.5461 | val_auc=0.8509
+Epoch 043 | time=4.0s | train_loss=0.1127 | val_loss=0.5468 | val_auc=0.8488
+Epoch 044 | time=4.1s | train_loss=0.1115 | val_loss=0.5410 | val_auc=0.8511
+Epoch 045 | time=3.9s | train_loss=0.1116 | val_loss=0.5367 | val_auc=0.8519
+Epoch 046 | time=3.8s | train_loss=0.1116 | val_loss=0.5442 | val_auc=0.8512
+Early stopping — no improvement for 10 epochs
+
+Best model: epoch 36, val_loss=0.5442, val_auc=0.8531
+
+═══ Test Results ═══
+           auc: 0.7512
+         auprc: 0.6718
+            f1: 0.6476
+     precision: 0.6423
+        recall: 0.6530
+          loss: 0.7490

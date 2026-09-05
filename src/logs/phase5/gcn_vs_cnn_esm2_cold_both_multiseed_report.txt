@@ -1,6 +1,12 @@
 Model: gcn_vs_cnn_esm2.yaml
 Split strategy: cold_both
 Seeds: [42, 123, 999, 1024, 2026]
-Runs completed successfully: 0/5
+Runs completed successfully: 5/5
 
 Aggregated Metrics (Mean ± Std):
+           auc: 0.5568 ± 0.0543
+         auprc: 0.5348 ± 0.0502
+            f1: 0.5309 ± 0.0254
+     precision: 0.4968 ± 0.0188
+        recall: 0.5713 ± 0.0435
+          loss: 0.7874 ± 0.0431

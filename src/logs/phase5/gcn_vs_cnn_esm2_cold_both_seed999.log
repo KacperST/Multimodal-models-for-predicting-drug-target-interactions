@@ -1,5 +1,5 @@
-Uninstalled 1 package in 6ms
-Installed 1 package in 9ms
+Uninstalled 1 package in 7ms
+Installed 1 package in 11ms
 /net/storage/pr3/plgrid/plggmlcil/plgkstankie/vvv/Multimodal-models-for-predicting-drug-target-interactions/.venv/lib/python3.11/site-packages/outdated/__init__.py:36: UserWarning: pkg_resources is deprecated as an API. See https://setuptools.pypa.io/en/latest/pkg_resources.html. The pkg_resources package is slated for removal as early as 2025-11-30. Refrain from using this package or pin to Setuptools<81.
   from pkg_resources import parse_version
 Setting global random seed to 999
@@ -10,19 +10,121 @@ Split strategy: cold_both
   K4 cold-both split: train=13694, val=328, test=923
   Rows retained: 14945/27498 (54.3%)
 Train: 13694  Val: 328  Test: 923
-Traceback (most recent call last):
-  File "/net/storage/pr3/plgrid/plggmlcil/plgkstankie/vvv/Multimodal-models-for-predicting-drug-target-interactions/src/main.py", line 459, in <module>
-    main()
-  File "/net/storage/pr3/plgrid/plggmlcil/plgkstankie/vvv/Multimodal-models-for-predicting-drug-target-interactions/src/main.py", line 357, in main
-    protein_processors, protein_encoders = build_protein_components(cfg)
-                                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/net/storage/pr3/plgrid/plggmlcil/plgkstankie/vvv/Multimodal-models-for-predicting-drug-target-interactions/src/main.py", line 237, in build_protein_components
-    proc, enc = _build_one_protein(spec)
-                ^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/net/storage/pr3/plgrid/plggmlcil/plgkstankie/vvv/Multimodal-models-for-predicting-drug-target-interactions/src/main.py", line 183, in _build_one_protein
-    encoder = ProteinCNNEncoder(
-              ^^^^^^^^^^^^^^^^^^
-  File "/net/storage/pr3/plgrid/plggmlcil/plgkstankie/vvv/Multimodal-models-for-predicting-drug-target-interactions/src/encoders/protein/cnn_encoder.py", line 27, in __init__
-    self._output_dim = num_filters * len(kernel_sizes)
-                       ~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~
-TypeError: unsupported operand type(s) for *: 'NoneType' and 'int'
+ESM2Processor: loaded 3580 embeddings (dim=1280) from /net/storage/pr3/plgrid/plggmlcil/plgkstankie/vvv/Multimodal-models-for-predicting-drug-target-interactions/src/datasets/esm2_t33_650M_UR50D.pt
+SMILES encoders:  ['GCNEncoder']
+Protein encoders: ['ProteinCNNEncoder', 'ESM2Encoder']
+Building graph cache for 1264 SMILES...
+  0%|          | 0/1264 [00:00<?, ?it/s] 18%|█▊        | 233/1264 [00:00<00:00, 2325.80it/s] 37%|███▋      | 466/1264 [00:00<00:00, 2277.32it/s] 55%|█████▍    | 694/1264 [00:00<00:00, 2236.15it/s] 73%|███████▎  | 922/1264 [00:00<00:00, 2251.30it/s] 92%|█████████▏| 1165/1264 [00:00<00:00, 2312.24it/s]100%|██████████| 1264/1264 [00:00<00:00, 2313.59it/s]
+Valid SMILES graphs: 1264
+MultimodalDTI(
+  (smiles_encoders): ModuleList(
+    (0): GCNEncoder(
+      (atom_encoder): AtomEncoder(
+        (atom_embedding_list): ModuleList(
+          (0): Embedding(119, 128)
+          (1): Embedding(5, 128)
+          (2-3): 2 x Embedding(12, 128)
+          (4): Embedding(10, 128)
+          (5-6): 2 x Embedding(6, 128)
+          (7-8): 2 x Embedding(2, 128)
+        )
+      )
+      (convs): ModuleList(
+        (0-2): 3 x GCNConv(128, 128)
+      )
+      (bns): ModuleList(
+        (0-2): 3 x BatchNorm1d(128, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      )
+    )
+  )
+  (protein_encoders): ModuleList(
+    (0): ProteinCNNEncoder(
+      (embedding): Embedding(21, 128, padding_idx=0)
+      (conv_blocks): ModuleList(
+        (0): Sequential(
+          (0): Conv1d(128, 64, kernel_size=(3,), stride=(1,), padding=(1,))
+          (1): BatchNorm1d(64, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+          (2): ReLU()
+          (3): Conv1d(64, 64, kernel_size=(3,), stride=(1,), padding=(1,))
+          (4): BatchNorm1d(64, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+          (5): ReLU()
+        )
+        (1): Sequential(
+          (0): Conv1d(128, 64, kernel_size=(7,), stride=(1,), padding=(3,))
+          (1): BatchNorm1d(64, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+          (2): ReLU()
+          (3): Conv1d(64, 64, kernel_size=(7,), stride=(1,), padding=(3,))
+          (4): BatchNorm1d(64, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+          (5): ReLU()
+        )
+        (2): Sequential(
+          (0): Conv1d(128, 64, kernel_size=(15,), stride=(1,), padding=(7,))
+          (1): BatchNorm1d(64, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+          (2): ReLU()
+          (3): Conv1d(64, 64, kernel_size=(15,), stride=(1,), padding=(7,))
+          (4): BatchNorm1d(64, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+          (5): ReLU()
+        )
+      )
+    )
+    (1): ESM2Encoder(
+      (projection): Sequential(
+        (0): Linear(in_features=1280, out_features=256, bias=True)
+        (1): LayerNorm((256,), eps=1e-05, elementwise_affine=True)
+        (2): ReLU()
+      )
+    )
+  )
+  (fusion): MLPFusion(
+    (classifier): Sequential(
+      (0): Linear(in_features=576, out_features=128, bias=True)
+      (1): BatchNorm1d(128, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      (2): ReLU()
+      (3): Dropout(p=0.3, inplace=False)
+      (4): Linear(in_features=128, out_features=32, bias=True)
+      (5): BatchNorm1d(32, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      (6): ReLU()
+      (7): Dropout(p=0.3, inplace=False)
+      (8): Linear(in_features=32, out_features=1, bias=True)
+    )
+  )
+)
+Epoch 001 | time=2.4s | train_loss=0.6133 | val_loss=0.6714 | val_auc=0.6176
+  ✓ New best model (epoch 1, val_loss=0.6714, val_auc=0.6176) saved to checkpoints/gcn_vs_cnn_esm2_seed999.pt
+Epoch 002 | time=1.6s | train_loss=0.5091 | val_loss=0.6423 | val_auc=0.6696
+  ✓ New best model (epoch 2, val_loss=0.6423, val_auc=0.6696) saved to checkpoints/gcn_vs_cnn_esm2_seed999.pt
+Epoch 003 | time=1.6s | train_loss=0.4528 | val_loss=0.6317 | val_auc=0.6809
+  ✓ New best model (epoch 3, val_loss=0.6317, val_auc=0.6809) saved to checkpoints/gcn_vs_cnn_esm2_seed999.pt
+Epoch 004 | time=1.6s | train_loss=0.4131 | val_loss=0.6192 | val_auc=0.6908
+  ✓ New best model (epoch 4, val_loss=0.6192, val_auc=0.6908) saved to checkpoints/gcn_vs_cnn_esm2_seed999.pt
+Epoch 005 | time=8.6s | train_loss=0.3856 | val_loss=0.6186 | val_auc=0.6981
+  ✓ New best model (epoch 5, val_loss=0.6186, val_auc=0.6981) saved to checkpoints/gcn_vs_cnn_esm2_seed999.pt
+Epoch 006 | time=1.7s | train_loss=0.3588 | val_loss=0.6199 | val_auc=0.6851
+Epoch 007 | time=1.6s | train_loss=0.3398 | val_loss=0.6153 | val_auc=0.6995
+  ✓ New best model (epoch 7, val_loss=0.6153, val_auc=0.6995) saved to checkpoints/gcn_vs_cnn_esm2_seed999.pt
+Epoch 008 | time=1.6s | train_loss=0.3225 | val_loss=0.6112 | val_auc=0.7042
+  ✓ New best model (epoch 8, val_loss=0.6112, val_auc=0.7042) saved to checkpoints/gcn_vs_cnn_esm2_seed999.pt
+Epoch 009 | time=3.1s | train_loss=0.3062 | val_loss=0.6095 | val_auc=0.6976
+Epoch 010 | time=1.6s | train_loss=0.2899 | val_loss=0.6027 | val_auc=0.7160
+  ✓ New best model (epoch 10, val_loss=0.6027, val_auc=0.7160) saved to checkpoints/gcn_vs_cnn_esm2_seed999.pt
+Epoch 011 | time=1.6s | train_loss=0.2785 | val_loss=0.6112 | val_auc=0.6991
+Epoch 012 | time=1.6s | train_loss=0.2667 | val_loss=0.6134 | val_auc=0.6825
+Epoch 013 | time=1.6s | train_loss=0.2549 | val_loss=0.6263 | val_auc=0.6657
+Epoch 014 | time=1.6s | train_loss=0.2445 | val_loss=0.6122 | val_auc=0.6979
+Epoch 015 | time=1.6s | train_loss=0.2340 | val_loss=0.6297 | val_auc=0.6512
+Epoch 016 | time=1.6s | train_loss=0.2269 | val_loss=0.6283 | val_auc=0.6756
+Epoch 017 | time=1.6s | train_loss=0.2159 | val_loss=0.6182 | val_auc=0.6702
+Epoch 018 | time=1.6s | train_loss=0.2103 | val_loss=0.6327 | val_auc=0.6689
+Epoch 019 | time=1.6s | train_loss=0.2043 | val_loss=0.6324 | val_auc=0.6744
+Epoch 020 | time=1.6s | train_loss=0.2007 | val_loss=0.6143 | val_auc=0.6899
+Early stopping — no improvement for 10 epochs
+
+Best model: epoch 10, val_loss=0.6143, val_auc=0.7160
+
+═══ Test Results ═══
+           auc: 0.5754
+         auprc: 0.5641
+            f1: 0.5158
+     precision: 0.4877
+        recall: 0.5473
+          loss: 0.7644
