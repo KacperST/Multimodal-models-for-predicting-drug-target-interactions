@@ -1,5 +1,5 @@
 data:
-  clean_path: datasets/clean.parquet
+  clean_path: datasets/lincs_balanced.parquet
   path: datasets/BindingDB_All.tsv
   pki_threshold: 7.0
   split_ratios:
@@ -9,13 +9,13 @@ data:
 smiles_encoders:
 - type: gcn
   params:
-    hidden_dim: 256
+    hidden_dim: 128
     num_layers: 3
 protein_encoders:
 - type: cnn
   params:
-    embed_dim: 256
-    num_filters: 128
+    embed_dim: 128
+    num_filters: 
     kernel_sizes:
     - 3
     - 7
@@ -29,12 +29,12 @@ fusion:
   type: mlp
   params:
     hidden_dims:
-    - 256
-    - 64
+    - 128
+    - 32
     dropout: 0.3
 training:
-  batch_size: 512
-  learning_rate: 0.0003
+  batch_size: 128
+  learning_rate: 0.00005
   weight_decay: 1.0e-05
   epochs: 150
   patience: 10
