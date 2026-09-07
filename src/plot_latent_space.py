@@ -51,6 +51,25 @@ MODELS_TO_PLOT = [
 
 # ── Helpers ──────────────────────────────────────────────────────────
 
+def format_model_name(name: str) -> str:
+    if name == "gcn_chembert_and_cnn":
+        return "GCN + ChemBERTa and CNN"
+    elif name == "gcn_fp_chembert_and_cnn_esm2" or name == "gcn_fp_chembert_and_css_esm2" or name == "gcn_fp_chembert_vs_cnn_esm2":
+        return "FP + GCN + ChemBERTa and CNN + ESM2"
+    elif name == "gcn_chemberta_vs_cnn_esm2":
+        return "GCN + ChemBERTa and CNN+ESM2"
+    elif name == "gcn_vs_cnn" or name == "gcn_and_cnn":
+        return "GCN and CNN"
+    elif name == "chembert_vs_esm2":
+        return "ChemBERTa and ESM2"
+
+    parts = name.replace("_and_", "_vs_").split("_vs_")
+    if len(parts) == 2:
+        mapping = {"gcn": "GCN", "fp": "FP", "chembert": "ChemBERTa", "chemberta": "ChemBERTa", "cnn": "CNN", "esm2": "ESM2", "css": "CNN"}
+        drugs = [mapping.get(d, d.upper()) for d in parts[0].split("_")]
+        prots = [mapping.get(p, p.upper()) for p in parts[1].split("_")]
+        return " + ".join(drugs) + " and " + " + ".join(prots)
+    return name
 
 def _resolve_path(path_value: str | Path) -> Path:
     path = Path(path_value)
@@ -176,10 +195,12 @@ def plot_tsne(
 
     ax.set_xlabel("t-SNE 1", fontsize=12)
     ax.set_ylabel("t-SNE 2", fontsize=12)
+    formatted_name = format_model_name(model_name)
     ax.set_title(
-        f"Latent Space (t-SNE) — {model_name}",
-        fontsize=14,
+        f"Latent Space (t-SNE)\n{formatted_name}",
+        fontsize=13,
         fontweight="bold",
+        pad=10,
     )
     ax.legend(fontsize=11, markerscale=3)
     ax.grid(True, alpha=0.15)

@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import argparse
 import os
+import textwrap
 from pathlib import Path
 
 import matplotlib
@@ -56,6 +57,25 @@ MODELS_TO_PLOT = [
 
 # ── Helpers ──────────────────────────────────────────────────────────
 
+def format_model_name(name: str) -> str:
+    if name == "gcn_chembert_and_cnn":
+        return "GCN + ChemBERTa and CNN"
+    elif name == "gcn_fp_chembert_and_cnn_esm2" or name == "gcn_fp_chembert_and_css_esm2" or name == "gcn_fp_chembert_vs_cnn_esm2":
+        return "FP + GCN + ChemBERTa and CNN + ESM2"
+    elif name == "gcn_chemberta_vs_cnn_esm2":
+        return "GCN + ChemBERTa and CNN+ESM2"
+    elif name == "gcn_vs_cnn" or name == "gcn_and_cnn":
+        return "GCN and CNN"
+    elif name == "chembert_vs_esm2":
+        return "ChemBERTa and ESM2"
+
+    parts = name.replace("_and_", "_vs_").split("_vs_")
+    if len(parts) == 2:
+        mapping = {"gcn": "GCN", "fp": "FP", "chembert": "ChemBERTa", "chemberta": "ChemBERTa", "cnn": "CNN", "esm2": "ESM2", "css": "CNN"}
+        drugs = [mapping.get(d, d.upper()) for d in parts[0].split("_")]
+        prots = [mapping.get(p, p.upper()) for p in parts[1].split("_")]
+        return " + ".join(drugs) + " and " + " + ".join(prots)
+    return name
 
 def _resolve_path(path_value: str | Path) -> Path:
     path = Path(path_value)
@@ -131,7 +151,8 @@ def plot_roc_curve(
     ax.set_ylim([-0.02, 1.02])
     ax.set_xlabel("False Positive Rate", fontsize=12)
     ax.set_ylabel("True Positive Rate", fontsize=12)
-    ax.set_title(f"ROC Curve — {model_name}", fontsize=14, fontweight="bold")
+    formatted_name = format_model_name(model_name)
+    ax.set_title(f"ROC Curve\n{formatted_name}", fontsize=13, fontweight="bold", pad=10)
     ax.legend(loc="lower right", fontsize=11)
     ax.grid(True, alpha=0.3)
     fig.tight_layout()
@@ -161,7 +182,8 @@ def plot_pr_curve(
     ax.set_ylim([-0.02, 1.02])
     ax.set_xlabel("Recall", fontsize=12)
     ax.set_ylabel("Precision", fontsize=12)
-    ax.set_title(f"Precision-Recall Curve — {model_name}", fontsize=14, fontweight="bold")
+    formatted_name = format_model_name(model_name)
+    ax.set_title(f"Precision-Recall Curve\n{formatted_name}", fontsize=13, fontweight="bold", pad=10)
     ax.legend(loc="lower left", fontsize=11)
     ax.grid(True, alpha=0.3)
     fig.tight_layout()
@@ -192,7 +214,9 @@ def plot_confusion_matrix(
         values_format="d",
         colorbar=True,
     )
-    ax.set_title(f"Confusion Matrix — {model_name}", fontsize=14, fontweight="bold")
+    formatted_name = format_model_name(model_name)
+    wrapped_name = "\n".join(textwrap.wrap(formatted_name, width=40))
+    ax.set_title(f"Confusion Matrix\n{wrapped_name}", fontsize=13, fontweight="bold", pad=10)
     fig.tight_layout()
     fig.savefig(output_path, dpi=200)
     plt.close(fig)
