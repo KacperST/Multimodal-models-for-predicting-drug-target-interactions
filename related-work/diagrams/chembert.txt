@@ -9,7 +9,7 @@ graph TD
 
     %% Processor Container
     subgraph Processor ["Pre-computed Features Lookup                                     "]
-        B["Cached ChemBERT Embedding
+        B["Cached ChemBERTa Embedding
         "]:::defaultStyle
     end
 

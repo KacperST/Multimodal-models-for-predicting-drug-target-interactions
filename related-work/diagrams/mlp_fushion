@@ -1,0 +1,51 @@
+graph TD
+    %% Styling definitions
+    classDef inputStyle fill:#dae8fc,stroke:#6c8ebf,stroke-width:1.5px,color:#000000;
+    classDef defaultStyle fill:#ffffff,stroke:#333333,stroke-width:1.5px,color:#000000;
+    classDef outputStyle fill:#e2f0d9,stroke:#385723,stroke-width:1.5px,color:#000000;
+    classDef vectorStyle fill:#f8cecc,stroke:#b85450,stroke-width:1.5px,color:#000000;
+    classDef fusionStyle fill:#ffe6cc,stroke:#d79b00,stroke-width:1.5px,color:#000000;
+
+    subgraph Drug_Pathway [Drug Pathway]
+        SMILES["SMILES"]:::inputStyle
+        GCN["GCN"]:::defaultStyle
+        Fingerprint["Fingerprint"]:::defaultStyle
+        ChemBERT["ChemBERTa"]:::defaultStyle
+        DrugVector(("Concatenated<br>Drug Vector")):::vectorStyle
+
+        SMILES --> GCN
+        SMILES --> Fingerprint
+        SMILES --> ChemBERT
+        
+        GCN --> DrugVector
+        Fingerprint --> DrugVector
+        ChemBERT --> DrugVector
+    end
+
+    subgraph Protein_Pathway [Protein Pathway]
+        ProteinSeq["Protein Sequence"]:::inputStyle
+        CNN["CNN"]:::defaultStyle
+        ESM2["ESM-2"]:::defaultStyle
+        ProteinVector(("Concatenated<br>Protein<br>Vector")):::vectorStyle
+
+        ProteinSeq --> CNN
+        ProteinSeq --> ESM2
+        
+        CNN --> ProteinVector
+        ESM2 --> ProteinVector
+    end
+
+    subgraph Classification [Classification]
+        Fusion["Fusion Module"]:::fusionStyle
+        Prediction["Prediction"]:::outputStyle
+        
+        Fusion --> Prediction
+    end
+
+    DrugVector --> Fusion
+    ProteinVector --> Fusion
+
+    %% Subgraph styling
+    style Drug_Pathway fill:#ffffff,stroke:#000000,stroke-width:1.5px,color:#000000
+    style Protein_Pathway fill:#ffffff,stroke:#000000,stroke-width:1.5px,color:#000000
+    style Classification fill:#ffffff,stroke:#000000,stroke-width:1.5px,color:#000000

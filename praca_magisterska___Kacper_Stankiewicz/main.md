@@ -635,7 +635,7 @@ protein sequence consists of 522 amino acids.
 <img src="./img/stats/length_distribution.png" style="height:35.0%" />
 <figcaption>Overall length distributions for SMILES strings and protein
 sequences (truncated at the 99th percentile for
-visualization).</figcaption>
+visualization)</figcaption>
 </figure>
 
 Based on the distributions presented in Figure
@@ -655,7 +655,7 @@ typical of real-world biological systems.
 <img src="./img/stats/degree_distribution.png" style="height:35.0%" />
 <figcaption>Log-scaled degree distributions representing the number of
 drugs per protein (left) and the number of assigned proteins per drug
-(right).</figcaption>
+(right)</figcaption>
 </figure>
 
 As illustrated by the log-scaled histograms in Figure
@@ -679,7 +679,7 @@ than capturing the underlying physical chemistry of the binding process.
 <figure id="fig:length_by_class" data-latex-placement="htbp">
 <img src="./img/stats/length_by_class.png" style="height:35.0%" />
 <figcaption>Density distributions of SMILES and protein sequence lengths
-separated by the interaction class (Active vs. Inactive).</figcaption>
+separated by the interaction class (Active vs. Inactive)</figcaption>
 </figure>
 
 To verify the integrity of the dataset, length distributions were
@@ -705,7 +705,7 @@ activity threshold established at $\text{p}K_i = 7.0$
 class="math inline">p<em>K</em><sub><em>i</em></sub></span> values
 across the dataset (left) alongside class-separated boxplots (right),
 with the red dashed line marking the activity threshold (<span
-class="math inline">p<em>K</em><sub><em>i</em></sub> = 7.0</span>).</figcaption>
+class="math inline">p<em>K</em><sub><em>i</em></sub> = 7.0</span>)</figcaption>
 </figure>
 
 The distribution spans a broad affinity range from
@@ -738,7 +738,7 @@ run a high risk of overfitting to those specific chemotypes.
 <img src="./img/stats/scaffold_analysis.png" style="height:35.0%" />
 <figcaption>Murcko scaffold diversity analysis showcasing the top 15
 most frequent scaffolds and the cumulative molecule coverage by scaffold
-rank.</figcaption>
+rank</figcaption>
 </figure>
 
 The Murcko scaffold analysis successfully parsed the unique SMILES
@@ -770,7 +770,7 @@ size or solubility biases.
 <figcaption>Physicochemical property distributions of the dataset,
 illustrating drug-likeness (MW, LogP) and structural complexity
 (Aromatic Rings, Rotatable Bonds) across active and inactive
-classes.</figcaption>
+classes</figcaption>
 </figure>
 
 When it comes to structural complexity, there are subtle but important
@@ -791,7 +791,7 @@ the Active and Inactive classes.
 <img src="./img/stats/amino_acid_composition.png"
 style="height:35.0%" />
 <figcaption>Frequency of individual amino acids compared between active
-and inactive protein targets.</figcaption>
+and inactive protein targets</figcaption>
 </figure>
 
 As depicted in Figure
@@ -1080,7 +1080,7 @@ reference="fig:overall_architektura"}.
 <figure id="fig:overall_architektura" data-latex-placement="H">
 <embed src="./img/overall_architecture.pdf" style="width:90.0%" />
 <figcaption>Overall architecture of the DTI experiments, showing the
-dual-pathway design and fusion strategies.</figcaption>
+dual-pathway design and fusion strategies</figcaption>
 </figure>
 
 This architecture follows a \"late fusion\" approach. It consists of two
@@ -1376,7 +1376,7 @@ reference="fig:best_model"}b).
 <figcaption>t-SNE Latent Space</figcaption>
 </figure>
 <figcaption>Visual diagnostics for the best-performing model
-(<code>gcn_and_cnn</code>).</figcaption>
+(<code>gcn_and_cnn</code>)</figcaption>
 </figure>
 
 In contrast, Figure [4.2](#fig:complex_model){reference-type="ref"
@@ -1418,7 +1418,7 @@ reference="fig:complex_model"}b).
 <figcaption>t-SNE Latent Space</figcaption>
 </figure>
 <figcaption>Visual diagnostics for the most complex model
-(<code>gcn_fp_chembert_and_cnn_esm2</code>).</figcaption>
+(<code>gcn_fp_chembert_and_cnn_esm2</code>)</figcaption>
 </figure>
 
 Finally, Figure [4.3](#fig:worst_model){reference-type="ref"
@@ -1456,7 +1456,7 @@ overall AUC score (0.8591) in the experiment.
 <figcaption>t-SNE Latent Space</figcaption>
 </figure>
 <figcaption>Visual diagnostics for the lowest-performing model
-(<code>chembert_and_esm2</code>).</figcaption>
+(<code>chembert_and_esm2</code>)</figcaption>
 </figure>
 
 Overall, despite the differences in multimodal architectures, all
@@ -1558,7 +1558,7 @@ compared to the Phase 1 baseline.
 <figcaption>t-SNE Latent Space</figcaption>
 </figure>
 <figcaption>Visual diagnostics for the best-performing Phase 2 model
-(<code>gcn_chembert_and_cnn</code>).</figcaption>
+(<code>gcn_chembert_and_cnn</code>)</figcaption>
 </figure>
 
 In contrast, Figure [4.5](#fig:phase2_overloaded){reference-type="ref"
@@ -1602,7 +1602,7 @@ compensate for excessive informational noise.
 <figcaption>t-SNE Latent Space</figcaption>
 </figure>
 <figcaption>Visual diagnostics for the overloaded Phase 2 model
-(<code>gcn_fp_chembert_and_cnn_esm2</code>).</figcaption>
+(<code>gcn_fp_chembert_and_cnn_esm2</code>)</figcaption>
 </figure>
 
 ## Comparative Error Analysis and Molecular Diagnostics {#sec:error_analysis}
@@ -1630,7 +1630,7 @@ style="height:42.0%" />
 </figure>
 <figcaption>Prediction probability distributions separated by category
 (TP, TN, FP, FN) for the baseline and cross-attention
-models.</figcaption>
+models</figcaption>
 </figure>
 
 Visual diagnostics of the probability distributions (Figure
@@ -1673,7 +1673,7 @@ style="height:42.0%" />
 </figure>
 <figcaption>Molecular feature distributions per prediction category (TP,
 TN, FP, FN) highlighting class separation and structural
-limitations.</figcaption>
+limitations</figcaption>
 </figure>
 
 Detailed feature distribution plots (Figure
@@ -1875,8 +1875,8 @@ to 128. Consequently, the batch size was further reduced to 128. The
 models were optimized with a learning rate of $5 \times 10^{-5}$ and a
 weight decay of $1 \times 10^{-5}$. The early stopping patience was
 restored to 10 epochs (out of a maximum 150). Reducing dataset to
-approximately 27,000 interactions caused models to ovefit easily, so the
-droput had to be increased to 0.5
+approximately 27,000 interactions caused models to overfit easily, so the
+dropout had to be increased to 0.5.
 
 # Summary and Conclusions
 
