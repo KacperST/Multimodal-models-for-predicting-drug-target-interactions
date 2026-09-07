@@ -30,6 +30,7 @@ from sklearn.metrics import (
     confusion_matrix,
     precision_recall_curve,
     roc_curve,
+    average_precision_score,
 )
 from torch.utils.data import DataLoader
 from tqdm import tqdm
@@ -49,11 +50,28 @@ from processing.smiles.graph_processor import GraphProcessor
 # ── Models to evaluate ───────────────────────────────────────────────
 
 MODELS_TO_PLOT = [
-    "gcn_chembert_vs_cnn",
-    "gcn_fp_chembert_vs_cnn_esm2",
+    "gcn_chembert_and_cnn",
+    "gcn_fp_chembert_and_cnn_esm2",
 ]
 
 # ── Helpers ──────────────────────────────────────────────────────────
+
+
+def format_model_name(name: str) -> str:
+    if name == "gcn_chembert_and_cnn":
+        return "GCN + ChemBERTa and CNN"
+    elif name == "gcn_fp_chembert_and_cnn_esm2":
+        return "FP + GCN + ChemBERTa and CNN + ESM2"
+    elif name == "gcn_and_cnn":
+        return "GCN and CNN"
+    
+    parts = name.replace("_and_", "_vs_").split("_vs_")
+    if len(parts) == 2:
+        mapping = {"gcn": "GCN", "fp": "FP", "chembert": "ChemBERTa", "cnn": "CNN", "esm2": "ESM2", "css": "CNN"}
+        drugs = [mapping.get(d, d.upper()) for d in parts[0].split("_")]
+        prots = [mapping.get(p, p.upper()) for p in parts[1].split("_")]
+        return " + ".join(drugs) + " and " + " + ".join(prots)
+    return name
 
 
 def _resolve_path(path_value: str | Path) -> Path:
@@ -97,6 +115,33 @@ def _load_checkpoint(model: MultimodalDTI, checkpoint_path: Path) -> None:
 
 
 @torch.no_grad()
+def recalibrate_batchnorm(model: nn.Module, loader: DataLoader, device: torch.device):
+    """Recover missing BatchNorm running stats by doing a forward pass over train data."""
+    momenta = {}
+    for m in model.modules():
+        if isinstance(m, torch.nn.modules.batchnorm._BatchNorm):
+            m.running_mean = torch.zeros_like(m.running_mean)
+            m.running_var = torch.ones_like(m.running_var)
+            momenta[m] = m.momentum
+            m.momentum = None  # Use cumulative moving average
+            m.num_batches_tracked *= 0
+
+    if not momenta:
+        return
+
+    model.train()
+    pbar = tqdm(loader, desc="Recalibrating BN", leave=False)
+    for smiles_batch, protein_batch, _ in pbar:
+        smiles_batch = _to_device(smiles_batch, device)
+        protein_batch = _to_device(protein_batch, device)
+        _ = model(smiles_batch, protein_batch)
+
+    # Restore momenta
+    for m, momentum in momenta.items():
+        m.momentum = momentum
+
+
+@torch.no_grad()
 def collect_predictions(
     model: nn.Module,
     loader: DataLoader,
@@ -104,6 +149,7 @@ def collect_predictions(
 ) -> tuple[np.ndarray, np.ndarray]:
     """Run model on *loader* and return (labels, probabilities)."""
     model.eval()
+
     all_labels: list[float] = []
     all_probs: list[float] = []
 
@@ -140,7 +186,7 @@ def plot_roc_curve(
     ax.set_ylim([-0.02, 1.02])
     ax.set_xlabel("False Positive Rate", fontsize=12)
     ax.set_ylabel("True Positive Rate", fontsize=12)
-    ax.set_title(f"ROC Curve — {model_name}", fontsize=14, fontweight="bold")
+    ax.set_title(f"ROC Curve\n{model_name}", fontsize=13, fontweight="bold", pad=10)
     ax.legend(loc="lower right", fontsize=11)
     ax.grid(True, alpha=0.3)
     fig.tight_layout()
@@ -157,7 +203,9 @@ def plot_pr_curve(
 ) -> None:
     """Plot and save Precision-Recall curve."""
     precision, recall, _ = precision_recall_curve(labels, probs)
-    pr_auc = auc(recall, precision)
+    # The trapezoidal rule (auc) underestimates the PR curve area.
+    # TorchMetrics uses Average Precision, which is the correct stepwise area.
+    pr_auc = average_precision_score(labels, probs)
 
     fig, ax = plt.subplots(figsize=(7, 6))
     ax.plot(recall, precision, color="#059669", lw=2.2, label=f"PR (AUPRC = {pr_auc:.4f})")
@@ -170,7 +218,7 @@ def plot_pr_curve(
     ax.set_ylim([-0.02, 1.02])
     ax.set_xlabel("Recall", fontsize=12)
     ax.set_ylabel("Precision", fontsize=12)
-    ax.set_title(f"Precision-Recall Curve — {model_name}", fontsize=14, fontweight="bold")
+    ax.set_title(f"Precision-Recall Curve\n{model_name}", fontsize=13, fontweight="bold", pad=10)
     ax.legend(loc="lower left", fontsize=11)
     ax.grid(True, alpha=0.3)
     fig.tight_layout()
@@ -190,7 +238,7 @@ def plot_confusion_matrix(
     preds = (probs > threshold).astype(int)
     cm = confusion_matrix(labels.astype(int), preds)
 
-    fig, ax = plt.subplots(figsize=(6, 5.5))
+    fig, ax = plt.subplots(figsize=(6.5, 6))
     disp = ConfusionMatrixDisplay(
         confusion_matrix=cm,
         display_labels=["Inactive", "Active"],
@@ -201,7 +249,7 @@ def plot_confusion_matrix(
         values_format="d",
         colorbar=True,
     )
-    ax.set_title(f"Confusion Matrix — {model_name}", fontsize=14, fontweight="bold")
+    ax.set_title(f"Confusion Matrix\n{model_name}", fontsize=13, fontweight="bold", pad=10)
     fig.tight_layout()
     fig.savefig(output_path, dpi=200)
     plt.close(fig)
@@ -256,6 +304,7 @@ def evaluate_and_plot(
     batch_size = train_cfg.get("batch_size", 256)
     num_workers = train_cfg.get("num_workers", 4)
     if "OMP_NUM_THREADS" in os.environ:
+
         num_workers = 0
 
     test_ds = DTIDataset(
@@ -276,6 +325,23 @@ def evaluate_and_plot(
         persistent_workers=(num_workers > 0),
     )
 
+    train_ds = DTIDataset(
+        smiles_list=train_df["Ligand SMILES"].to_list(),
+        sequence_list=train_df["Full_Protein_Sequence"].to_list(),
+        labels=train_df["is_active"].cast(pl.Float64).to_list(),
+        smiles_processors=smiles_processors,
+        protein_processors=protein_processors,
+    )
+    train_loader = DataLoader(
+        train_ds,
+        batch_size=batch_size,
+        shuffle=True,
+        collate_fn=collate_fn,
+        num_workers=num_workers,
+        pin_memory=True,
+        persistent_workers=(num_workers > 0),
+    )
+
     # Build model & load weights
     device = _select_device(device_name)
     total_smiles_dim = sum(enc.output_dim for enc in smiles_encoders)
@@ -285,6 +351,9 @@ def evaluate_and_plot(
     _load_checkpoint(model, checkpoint_path)
     model = model.to(device)
 
+    # Recover global BN stats from the training set
+    recalibrate_batchnorm(model, train_loader, device)
+
     # Run inference
     labels, probs = collect_predictions(model, test_loader, device)
     print(f"  Test samples: {len(labels)}, Positive rate: {labels.mean():.3f}")
@@ -292,10 +361,12 @@ def evaluate_and_plot(
     # Generate plots
     model_dir = output_dir / model_name
     model_dir.mkdir(parents=True, exist_ok=True)
+    
+    display_name = format_model_name(model_name)
 
-    plot_roc_curve(labels, probs, model_name, model_dir / "roc_curve.png")
-    plot_pr_curve(labels, probs, model_name, model_dir / "pr_curve.png")
-    plot_confusion_matrix(labels, probs, model_name, model_dir / "confusion_matrix.png")
+    plot_roc_curve(labels, probs, display_name, model_dir / "roc_curve.png")
+    plot_pr_curve(labels, probs, display_name, model_dir / "pr_curve.png")
+    plot_confusion_matrix(labels, probs, display_name, model_dir / "confusion_matrix.png")
 
 
 # ── Main ─────────────────────────────────────────────────────────────

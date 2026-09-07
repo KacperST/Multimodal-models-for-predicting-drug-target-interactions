@@ -44,11 +44,28 @@ from processing.smiles.graph_processor import GraphProcessor
 # ── Models to visualise ──────────────────────────────────────────────
 
 MODELS_TO_PLOT = [
-    "gcn_chembert_vs_cnn",
-    "gcn_fp_chembert_vs_cnn_esm2",
+    "gcn_chembert_and_cnn",
+    "gcn_fp_chembert_and_cnn_esm2",
 ]
 
 # ── Helpers ──────────────────────────────────────────────────────────
+
+
+def format_model_name(name: str) -> str:
+    if name == "gcn_chembert_and_cnn":
+        return "GCN + ChemBERTa and CNN"
+    elif name == "gcn_fp_chembert_and_cnn_esm2":
+        return "FP + GCN + ChemBERTa and CNN + ESM2"
+    elif name == "gcn_vs_cnn":
+        return "GCN and CNN"
+    
+    parts = name.replace("_and_", "_vs_").split("_vs_")
+    if len(parts) == 2:
+        mapping = {"gcn": "GCN", "fp": "FP", "chembert": "ChemBERTa", "cnn": "CNN", "esm2": "ESM2", "css": "CNN"}
+        drugs = [mapping.get(d, d.upper()) for d in parts[0].split("_")]
+        prots = [mapping.get(p, p.upper()) for p in parts[1].split("_")]
+        return " + ".join(drugs) + " and " + " + ".join(prots)
+    return name
 
 
 def _resolve_path(path_value: str | Path) -> Path:
@@ -88,6 +105,33 @@ def _load_checkpoint(model: MultimodalDTI, checkpoint_path: Path) -> None:
 
 
 # ── Embedding extraction ─────────────────────────────────────────────
+
+
+@torch.no_grad()
+def recalibrate_batchnorm(model: nn.Module, loader: DataLoader, device: torch.device):
+    """Recover missing BatchNorm running stats by doing a forward pass over train data."""
+    momenta = {}
+    for m in model.modules():
+        if isinstance(m, torch.nn.modules.batchnorm._BatchNorm):
+            m.running_mean = torch.zeros_like(m.running_mean)
+            m.running_var = torch.ones_like(m.running_var)
+            momenta[m] = m.momentum
+            m.momentum = None  # Use cumulative moving average
+            m.num_batches_tracked *= 0
+
+    if not momenta:
+        return
+
+    model.train()
+    pbar = tqdm(loader, desc="Recalibrating BN", leave=False)
+    for smiles_batch, protein_batch, _ in pbar:
+        smiles_batch = _to_device(smiles_batch, device)
+        protein_batch = _to_device(protein_batch, device)
+        _ = model(smiles_batch, protein_batch)
+
+    # Restore momenta
+    for m, momentum in momenta.items():
+        m.momentum = momentum
 
 
 @torch.no_grad()
@@ -186,9 +230,10 @@ def plot_tsne(
     ax.set_xlabel("t-SNE 1", fontsize=12)
     ax.set_ylabel("t-SNE 2", fontsize=12)
     ax.set_title(
-        f"Latent Space (t-SNE) — {model_name}",
-        fontsize=14,
+        f"Latent Space (t-SNE)\n{model_name}",
+        fontsize=13,
         fontweight="bold",
+        pad=10,
     )
     ax.legend(fontsize=11, markerscale=3)
     ax.grid(True, alpha=0.15)
@@ -264,6 +309,23 @@ def extract_and_plot(
         persistent_workers=(num_workers > 0),
     )
 
+    train_ds = DTIDataset(
+        smiles_list=train_df["Ligand SMILES"].to_list(),
+        sequence_list=train_df["Full_Protein_Sequence"].to_list(),
+        labels=train_df["is_active"].cast(pl.Float64).to_list(),
+        smiles_processors=smiles_processors,
+        protein_processors=protein_processors,
+    )
+    train_loader = DataLoader(
+        train_ds,
+        batch_size=batch_size,
+        shuffle=True,
+        collate_fn=collate_fn,
+        num_workers=num_workers,
+        pin_memory=True,
+        persistent_workers=(num_workers > 0),
+    )
+
     device = _select_device(device_name)
     total_smiles_dim = sum(enc.output_dim for enc in smiles_encoders)
     total_protein_dim = sum(enc.output_dim for enc in protein_encoders)
@@ -272,13 +334,17 @@ def extract_and_plot(
     _load_checkpoint(model, checkpoint_path)
     model = model.to(device)
 
+    recalibrate_batchnorm(model, train_loader, device)
+
     embeddings, labels = collect_embeddings(model, test_loader, device)
     print(f"  Embeddings shape: {embeddings.shape}, Positive rate: {labels.mean():.3f}")
 
     model_dir = output_dir / model_name
     model_dir.mkdir(parents=True, exist_ok=True)
+    
+    display_name = format_model_name(model_name)
 
-    plot_tsne(embeddings, labels, model_name, model_dir / "tsne_latent_space.png")
+    plot_tsne(embeddings, labels, display_name, model_dir / "tsne_latent_space.png")
 
 
 # ── Main ─────────────────────────────────────────────────────────────
