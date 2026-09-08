@@ -2186,61 +2186,21 @@ Second, evaluating single-sided cold starts reveals a functional distinction bet
 
 Finally, the results for the dual cold-start scenario (Cold Both) remain at a near-random level of performance. The baseline GCN model achieved an AUC below 0.5 (0.454), while the other architectures produced values ranging marginally above random guessing (0.528 to 0.557). Given the small test set size (923 interactions) and performance clustering around the random baseline (AUC $\approx$ 0.5), drawing definitive conclusions about model rankings or stability based on standard deviations across the five runs is statistically unsupported. Therefore, the Cold Both evaluation must be reported as inconclusive. This highlights a fundamental limitation of the study: while the models generalize well to unseen drugs or unseen targets individually, evaluating simultaneous dual-modality extrapolation requires a significantly larger dataset than the rigorously filtered subset allows.
 
-## Experimental Setup and Training Details
+\section{Experimental Setup and Training Details}
 
-To ensure reproducibility and transparency, the specific hyperparameters
-and training configurations used across all five experimental phases
-are detailed below. All models were implemented in Python using the
-PyTorch (v2.11.0) and PyTorch Geometric (v2.7.0) frameworks, alongside
-the HuggingFace Transformers (v5.7.0) and PEFT (v0.19.1) libraries. The
-networks were trained with the AdamW optimizer, utilizing a Binary
-Cross-Entropy (BCE) loss function.
+\noindent To ensure reproducibility and transparency, the specific hyperparameters and training configurations used across all five experimental phases are detailed below. All models were implemented in Python using the PyTorch (v2.11.0) and PyTorch Geometric (v2.7.0) frameworks, alongside the HuggingFace Transformers (v5.7.0) and PEFT (v0.19.1) libraries. The networks were trained with the AdamW\cite{loshchilov2017decoupled} optimizer, utilizing a Binary Cross-Entropy (BCE) loss function.
 
-**General Setup and Phase 1**\
-During the initial benchmarking phase, the models were trained for a
-maximum of 150 epochs using a batch size of 512. An early stopping
-mechanism was employed with a patience of 10 epochs to prevent
-overfitting. The global learning rate was set to $3 \times 10^{-4}$ with
-a weight decay of $1 \times 10^{-5}$. The output embeddings from all
-structural and sequence encoders were standardized to a hidden dimension
-of 256 before fusion. To ensure a fair comparison across architectures
-with varying complexity, a dynamic regularization strategy was applied
-in the MLP fusion block. The baseline dropout was set to $0.3$ for
-dual-encoder models, increasing by $0.05$ for each additional modality
-(e.g., reaching $0.45$ for a 5-encoder configuration).
+\vspace{0.3cm}
+\noindent \textbf{General Setup and Phase 1} \\
+During the initial benchmarking phase, the models were trained for a maximum of 150 epochs using a batch size of 512. An early stopping mechanism was employed with a patience of 10 epochs to prevent overfitting. The global learning rate was set to $3 \times 10^{-4}$ with a weight decay of $1 \times 10^{-5}$. The output embeddings from all structural and sequence encoders were standardized to a hidden dimension of 256 before fusion. To ensure a fair comparison across architectures with varying complexity, a dynamic regularization strategy was applied in the MLP fusion block. The baseline dropout was set to $0.3$ for dual-encoder models, increasing by $0.05$ for each additional modality (e.g., reaching $0.45$ for a 5-encoder configuration). 
 
-**Phase 2: Parameter-Efficient Fine-Tuning**\
-The introduction of Cross-Attention and LoRA fine-tuning required a
-modified optimization strategy. Due to the increased computational
-overhead and memory footprint of the attention mechanisms, the batch
-size was reduced to 256. The maximum number of epochs was lowered to 30,
-with early stopping triggered after 8 epochs of no improvement. This
-epoch limit was necessary due to computational constraints. Despite
-extensive PyTorch code optimizations and the utilization of
-high-performance GPU nodes from the Cyfronet Helios supercomputer, the
-complex models required approximately 1.5 hours per epoch to train.
-Consequently, a single model could take up to 35-40 hours to converge,
-making an epoch cap essential to successfully evaluate all 10
-architectures. A dual learning rate strategy was implemented to maintain
-pre-trained stability: the base architecture was trained with a learning
-rate of $1 \times 10^{-4}$, while the newly injected LoRA adapters
-(configured with rank $r=16$, $\alpha=16$, and an internal dropout of
-$0.1$) were optimized with a significantly lower learning rate of
-$2 \times 10^{-5}$. The global weight decay was increased to $0.01$ to
-provide stronger regularization.
+\vspace{0.3cm}
+\noindent \textbf{Phase 2: Parameter-Efficient Fine-Tuning} \\
+The introduction of Cross-Attention and LoRA fine-tuning required a modified optimization strategy. Due to the increased computational overhead and memory footprint of the attention mechanisms, the batch size was reduced to 256. The maximum number of epochs was lowered to 30, with early stopping triggered after 8 epochs of no improvement. This epoch limit was necessary due to computational constraints. Despite extensive PyTorch code optimizations and the utilization of high-performance GPU nodes from the Cyfronet Helios supercomputer, the complex models required approximately 1.5 hours per epoch to train. Consequently, a single model could take up to 35-40 hours to converge, making an epoch cap essential to successfully evaluate all 10 architectures. A dual learning rate strategy was implemented to maintain pre-trained stability: the base architecture was trained with a learning rate of $1 \times 10^{-4}$, while the newly injected LoRA adapters (configured with rank $r=16$, $\alpha=16$, and an internal dropout of $0.1$) were optimized with a significantly lower learning rate of $2 \times 10^{-5}$. The global weight decay was increased to $0.01$ to provide stronger regularization.
 
-**Phases 3, 4, and 5: Biological Priors, Explicit Chemistry, and Cold Start**\
-Integrating dense biological priors in Phase 3 required further architectural
-adjustments. To prevent the 978-dimensional transcriptomic vectors from
-dominating the learning process, the standard embedding dimension for
-all encoders (including the CNN and GCN) was bottlenecked from 256 down
-to 128. Consequently, the batch size was further reduced to 128. The
-models were optimized with a learning rate of $5 \times 10^{-5}$ and a
-weight decay of $1 \times 10^{-5}$. The early stopping patience was
-restored to 10 epochs (out of a maximum 150). Reducing dataset to
-approximately 27,000 interactions caused models to ovefit easily, so the
-dropout had to be increased to 0.5. These fundamental hyperparameters were consistently maintained throughout Phase 4 (which introduced 210 continuous RDKit descriptors) and the rigorous cold-start evaluations in Phase 5. Finally, to ensure statistically sound conclusions on this smaller dataset, each architecture in Phases 3, 4, and 5 was trained from scratch five times using independent random seeds (42, 123, 999, 1024, and 2026).
-
+\vspace{0.3cm}
+\noindent \textbf{Phases 3, 4, and 5: Biological Priors, Explicit Chemistry, and Cold Start} \\
+Integrating dense biological priors in Phase 3 required further architectural adjustments. To prevent the 978-dimensional transcriptomic vectors from dominating the learning process, the standard embedding dimension for all encoders (including the CNN and GCN) was bottlenecked from 256 down to 128. Consequently, the batch size was further reduced to 128. The models were optimized with a learning rate of $5 \times 10^{-5}$ and a weight decay of $1 \times 10^{-5}$. The early stopping patience was restored to 10 epochs (out of a maximum 150). Reducing the dataset to approximately 27,000 interactions caused the models to overfit easily, so the dropout had to be increased to 0.5. These fundamental hyperparameters were consistently maintained throughout Phase 4 (which introduced 210 continuous RDKit descriptors) and the cold-start evaluations in Phase 5. Finally, to ensure statistically sound conclusions on this smaller dataset, each architecture in Phases 3, 4, and 5 was trained from scratch five times using independent random seeds (42, 123, 999, 1024, and 2026).
 ## Future Work
 
 While the proposed multi-modal architectures demonstrate strong
